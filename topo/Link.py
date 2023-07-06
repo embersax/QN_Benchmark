@@ -97,6 +97,10 @@ class Link:
         p, b = math.exp(-self.topo.alpha * self.l), self.assigned
         self.entangled = (b and p >= random.uniform(0, 1))
         return self.entangled
+    
+    # Returns the probability of the entanglement succeeding
+    def probEntanglementSuccess(self):
+        return math.exp(-self.topo.alpha * self.l)
 
     # "Deletes" an entanglement in this link.
     def clearEntanglement(self):

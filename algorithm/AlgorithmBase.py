@@ -21,7 +21,7 @@ class Algorithm(metaclass=abc.ABCMeta):
         assert self.topo.isClean()
         self.srcDstPairs.clear()
         self.srcDstPairs.extend(pairs)
-        for p in pairs: self.logWriter.write("{}⟷{}".format(p[0], p[1]))
+        for p in pairs: self.logWriter.write("{}<->{}".format(p[0], p[1]))
         self.P2()
         self.tryEntanglement()
         self.P4()
@@ -37,7 +37,7 @@ class Algorithm(metaclass=abc.ABCMeta):
             n1, n2 = nodes[0], nodes[1]
             # removed a set of () because we want individual variables and not tuple in the string formatting.
             # string.join("{}⟷{} × {}".format(n1.id, n2.id, length))
-            formatted_strings.append("{}⟷{} × {}".format(n1.id, n2.id, length))
+            formatted_strings.append("{}<->{} × {}".format(n1.id, n2.id, length))
         # string.join(' - {}'.format(self.name))
         formatted_strings.append(' - {}'.format(self.name))
         output = '  '.join(formatted_strings)

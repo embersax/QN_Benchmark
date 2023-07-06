@@ -41,7 +41,7 @@ def simpleTest():
 
         alphas.append(alpha)
 
-    repeat = 1000
+    repeat = 1
 
     def funInLine135(combs, nsd, repeat):
         res = []
@@ -64,7 +64,7 @@ def simpleTest():
             #         result : list([int,int])
             # avgEntanglements = sum([x[0] for x in result]) / len(result)
             # avgEntangled = sum([x[1] for x in result]) / len(result)
-            results.append(x)
+            results.append(result)
         avgEntanglements = sum([x[0] for x in results]) / len(results)
         avgEntangled = sum([x[1] for x in results]) / len(results)
         return results
