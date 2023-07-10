@@ -19,7 +19,8 @@ class Link:
                  l,
                  entangled=False,
                  swap1=False,
-                 swap2=False):
+                 swap2=False,
+                 fidelity=0.8):
         self.swap2 = swap2
         self.swap1 = swap1
         self.l = l
@@ -31,6 +32,7 @@ class Link:
         self.id = Link.count
         self.assigned = False
         self.utilized = False
+        self.fidelity = fidelity
     # Given a node n, returns the node at the other end of the link.
     def otherThan(self, node):
         if self.n1 == node:
@@ -98,9 +100,8 @@ class Link:
         self.entangled = (b and p >= random.uniform(0, 1))
         return self.entangled
     
-    # Returns the probability of the entanglement succeeding
-    def probEntanglementSuccess(self):
-        return math.exp(-self.topo.alpha * self.l)
+    def fidelity(self):
+        return self.fidelity
 
     # "Deletes" an entanglement in this link.
     def clearEntanglement(self):
