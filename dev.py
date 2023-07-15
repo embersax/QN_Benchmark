@@ -6,12 +6,5 @@ topo = Topo(netTopology)
 
 algo = QPath(topo, 0)
 
-# Check to make sure the # of links == # of possible fidelities
-t = 0
-for link, fid_list in algo.purification_table.items():
-    t += len(fid_list)
-assert t == len(topo.links)
-
-algor = QPath(topo, 2)
-assert len(algor.purification_table) == 0
+algo.P2(0, 1)
 

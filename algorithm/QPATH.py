@@ -1,5 +1,8 @@
 # topo imports do not work in algorithms dir
 from topo.Topo import Topo
+from algorithm.AlgorithmBase import Algorithm
+from utils.CollectionUtils import PriorityQueue
+import sys
 
 # Purification table = {
 #                       (node1.id, node2.id) : [fidelity at 0 purifications..., fidelity at max purifications]
@@ -37,4 +40,11 @@ class QPath():
         self.threshold = threshold
         self.purification_table = remove_lower_threshold(populate_purification_table({}, self.topo), self.threshold)
         self.name = 'QPath'
+    def P2(self, source, dst):
+        self.q = PriorityQueue()
+        shortest_route_length = self.topo.shortestPath(self.source, self.dst)
+        print(type(shortest_route_length))
+        # for min_hops in range(shortest_route_length, sys.maxsize):
+        #     if shortest_route_length == 0:
+        #         break
 

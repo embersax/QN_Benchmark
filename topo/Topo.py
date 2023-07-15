@@ -180,14 +180,14 @@ class Topo:
         n1, n2 = [min(n1_, n2_), max(n1_, n2_)]
         linksAndEdges = {}
         for link in self.links:
-            linksAndEdges[link] = link.node1.nodeTo(link.node2)
+            linksAndEdges[link] = link.n1.nodeTo(link.n2)
         topoStr = '\n'.join(str(el) for el in set(linksAndEdges))
         digest = hashlib.sha256()
-        digest.update(bytearray(topoStr))
+        digest.update(bytearray(topoStr.encode()))
         # I'm not sure what to do with the routeStorage part
         result = []
-        range_ = self.kHopNeighbors(self.nodes[n1], (hopLimit + 1) / 2) + self.kHopNeighbors(self.nodes[n2],
-                                                                                             (hopLimit + 1) / 2)
+        range_ = self.kHopNeighbors(self.nodes[n1], (hopLimit + 1) / 2).add(self.kHopNeighbors(self.nodes[n2],
+                                                                                             (hopLimit + 1) / 2))
         # If result is empty
         if not result:
             # Find all

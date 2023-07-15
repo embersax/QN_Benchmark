@@ -58,7 +58,7 @@ class Node:
 
     # Function that creates an edge between two nodes
     def nodeTo(self, n2):
-        return Edge(self.n1, n2)
+        return Edge(self.id, n2)
 
     def __repr__(self):
         return f"Node id: {self.id}"
