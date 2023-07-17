@@ -6,5 +6,7 @@ topo = Topo(netTopology)
 
 algo = QPath(topo, 0)
 
-algo.P2(0, 1)
+print(topo.nodes[0], topo.nodes[1])
+
+algo.P2(topo.nodes[0], topo.nodes[3])
 
