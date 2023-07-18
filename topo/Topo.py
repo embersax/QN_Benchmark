@@ -9,6 +9,9 @@ from utils.Disjoinset import Disjointset
 from utils.utils import *
 from utils.CollectionUtils import PriorityQueue
 import random
+from collections import defaultdict
+import shortestpaths as sp
+import networkx as nx
 
 hopLimit = 15
 
@@ -514,6 +517,28 @@ class Topo:
     def linksBetween(self, node1, node2):
         return list(filter(lambda link: node2 == link.node1 or node2 == link.node2, [link for link in node1.links]))
 
+    # From recorded links, find out existing edges with their end nodes
+    # Use Yen's algorithm to determine shortest path
+    # Returns a list to tuples containing the path nodes in a list and the cost as the second element
+    def shortestPathYenAlg(self, source, destination, numberOfPaths):
+        edgeAndNodes = []
+        for link in self.links:
+            # How to determine edges? Using recorded or entangled links? How to double check its correctness?
+            # if link.entangled is True:
+            #     print("Entangled: ", str(link.n1.id), str(link.n2.id))
+            edgeNodes = [link.n1.id, link.n2.id]
+            if edgeNodes not in edgeAndNodes:
+                edgeAndNodes.append(edgeNodes)
+        print(edgeAndNodes)
+        G = nx.Graph()
+        G.add_edges_from(edgeAndNodes)
+        k_paths = sp.k_shortest_paths(G, source, destination, numberOfPaths, method = 'y')
+        
+        return k_paths
+        # Uncomment below to print path & cost in readable format and to plot a graph
+        # sp.print_paths(k_paths)
+        # sp.plot_paths(k_paths, G)
+        # print()
 
     @staticmethod
     def generateString(n, q, k, a, degree):
