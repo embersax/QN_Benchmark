@@ -9,7 +9,7 @@ import sys
 #                       (0, 1)               : [0.4, 0.7, 0.9]
 #                       }
 
-# Fidelity degration after entanglement swapping calculated by formula in
+# Fidelity degration after entanglement swapping calculated by formula 4 in 
 # https://arxiv.org/pdf/1906.06019.pdf#:~:text=Additionally%20for%20opera%2D%20tion%20with,pair%20of%20high%20target%20fidelity.
 
 
@@ -71,7 +71,8 @@ class QPath():
                     dist[link.n2] = min(dist[source] + 1, dist[link.n2])
         return -1
     
-    def path_fidelity(path):
-
-
+    # def path_fidelity(path, purification_decisions):
+    #     fidelity = 0
+    #     for node in path:
+            
             
