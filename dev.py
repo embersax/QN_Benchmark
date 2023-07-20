@@ -8,5 +8,5 @@ algo = QPath(topo, 0)
 
 print(topo.nodes[0], topo.nodes[1])
 
-algo.P2(topo.nodes[0], topo.nodes[3])
+print(algo.returns_shortest_path(topo.nodes[0], topo.nodes[3]))
 

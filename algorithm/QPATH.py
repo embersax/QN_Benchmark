@@ -12,9 +12,17 @@ import sys
 # Fidelity degration after entanglement swapping calculated by formula 4 in 
 # https://arxiv.org/pdf/1906.06019.pdf#:~:text=Additionally%20for%20opera%2D%20tion%20with,pair%20of%20high%20target%20fidelity.
 
+# Path tracing credits to https://stackoverflow.com/questions/8922060/how-to-trace-the-path-in-a-breadth-first-search
+
+# Returns the fidelity after an entanglement swapping
+def swap_fidelity(f):
+    return f**2 + ((1-f)**2)/3
+
+# Returns the fidelity after a single purification
+def purify(f1, f2):
+    return f1*f2/(f1*f2 + (1-f1)*(1-f2))
 
 # Removes all links that have max fidelity < required threshold
-# Since fidelity list created in increasing order, fid_list[-1] returns max fidelity
 def remove_lower_threshold(purification_table, threshold):
     keys_to_del = []
     for link, fid_list in purification_table.items():
@@ -32,10 +40,8 @@ def populate_purification_table(purification_table, topo):
         else:
             # Apply Formula to find max purified fidelity
             x1, x2 = link.fidelity, purification_table[link.n1.id, link.n2.id][-1]
-            purification_table[(link.n1.id, link.n2.id)].append(x1*x2/(x1*x2 + (1-x1)*(1-x2)))
+            purification_table[(link.n1.id, link.n2.id)].append(purify(x1, x2))
     return purification_table
-
-
 
 class QPath():
     def __init__(self, topo, threshold):
@@ -71,8 +77,24 @@ class QPath():
                     dist[link.n2] = min(dist[source] + 1, dist[link.n2])
         return -1
     
-    # def path_fidelity(path, purification_decisions):
-    #     fidelity = 0
-    #     for node in path:
+    def returns_shortest_path(self, source, dst):
+        # Returns the path in list form [node, node]
+        queue = [(source,[source])]
+        visited = set()
+
+        while queue:
+            vertex, path = queue.pop(0)
+            visited.add(vertex)
+            print(vertex)
+            # Getting nodes from the links, link.n2 is an adjacent node
+            for link in vertex.links:
+                if link.n2 == dst:
+                    return path + [dst]
+                else:
+                    if link.n2 not in visited:
+                        visited.add(link.n2)
+                        queue.append((link.n2, path + [link.n2]))
+        return queue
+                
             
             
