@@ -49,17 +49,17 @@ class QPath():
         self.threshold = threshold
         self.purification_table = remove_lower_threshold(populate_purification_table({}, self.topo), self.threshold)
         self.name = 'QPath'
-    def P2(self, source, dst):
+    def P2(self, source, dst, reqs):
         self.q = PriorityQueue()
-        self.source = source
-        self.dst = dst
         shortest_route_length = self.shortest_path_BFS(self.source, self.dst)
         if shortest_route_length == -1:
             return
         update_graph = self.topo
-        for min_hops in range(shortest_route_length, sys.maxsize):
-            self.purification_table
-
+        path_fidelity = self.calc_path_fidelity(self.returns_shortest_path(source, dst))
+        # for min_hops in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
+        #     while path_fidelity < self.threshold:
+        #         path_fidelity = path
+                
     def shortest_path_BFS(self, source, dst):
         # returns min distance by num hops between two nodes
         # returns -1 if node unreachable
@@ -95,6 +95,16 @@ class QPath():
                         visited.add(link.n2)
                         queue.append((link.n2, path + [link.n2]))
         return queue
+    def calc_path_fidelity(self, path):
+        fidelity = 1
+        for i in range(len(path) - 1):
+            fidelity * self.purification_table[(path[i], path[i+1])][0]
+        return fidelity
                 
+    def min_fidelity_link(self, path):
+        min_fid = 1
+        for i in range(len(path) - 1):
+            min_fid = min(self.purification_table[(path[i], path[i+1])][0])
+        return min_fid
             
             
