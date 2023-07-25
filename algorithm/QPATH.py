@@ -9,9 +9,6 @@ import sys
 #                       (node id: 0, node id: 1)               : [0.4, 0.7, 0.9]
 #                       }
 
-# Fidelity degration after entanglement swapping calculated by formula 4 in 
-# https://arxiv.org/pdf/1906.06019.pdf#:~:text=Additionally%20for%20opera%2D%20tion%20with,pair%20of%20high%20target%20fidelity.
-
 # Path tracing credits to https://stackoverflow.com/questions/8922060/how-to-trace-the-path-in-a-breadth-first-search
 
 # Returns the fidelity after an entanglement swapping
@@ -55,10 +52,14 @@ class QPath():
         if shortest_route_length == -1:
             return
         update_graph = self.topo
-        path_fidelity = self.calc_path_fidelity(self.returns_shortest_path(source, dst))
-        # for min_hops in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
-        #     while path_fidelity < self.threshold:
-        #         path_fidelity = path
+        path = self.returns_shortest_path(source, dst)
+        path_fidelity = self.calc_path_fidelity(path)
+
+        # for Hmin: E|C|:
+        for min_hops in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
+            while path_fidelity < self.threshold:
+                purify_link = self.min_fidelity_link(path)
+                
                 
     def shortest_path_BFS(self, source, dst):
         # returns min distance by num hops between two nodes
@@ -77,6 +78,7 @@ class QPath():
                     dist[link.n2] = min(dist[source] + 1, dist[link.n2])
         return -1
     
+
     def returns_shortest_path(self, source, dst):
         # Returns the path in list form [node, node]
         queue = [(source,[source])]
@@ -95,13 +97,17 @@ class QPath():
                         visited.add(link.n2)
                         queue.append((link.n2, path + [link.n2]))
         return queue
+    
+    
     def calc_path_fidelity(self, path):
         fidelity = 1
         for i in range(len(path) - 1):
             fidelity = fidelity * self.purification_table[(path[i], path[i+1])][0]
         return fidelity
                 
+
     def min_fidelity_link(self, path):
+        # Find the link with the minimum fidelity through the purification table
         min_fid = 1
         n1 = n2 = path[0]
         for i in range(len(path) - 1):
