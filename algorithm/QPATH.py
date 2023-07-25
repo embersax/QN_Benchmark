@@ -5,8 +5,8 @@ from utils.CollectionUtils import PriorityQueue
 import sys
 
 # Purification table = {
-#                       (node1.id, node2.id) : [fidelity at 0 purifications..., fidelity at max purifications]
-#                       (0, 1)               : [0.4, 0.7, 0.9]
+#                       (node1, node2) : [fidelity at 0 purifications..., fidelity at max purifications]
+#                       (node id: 0, node id: 1)               : [0.4, 0.7, 0.9]
 #                       }
 
 # Fidelity degration after entanglement swapping calculated by formula 4 in 
@@ -35,12 +35,12 @@ def remove_lower_threshold(purification_table, threshold):
 # Creates purification table from given topology
 def populate_purification_table(purification_table, topo):
     for link in topo.links:
-        if (link.n1.id, link.n2.id) not in purification_table.keys(): 
-            purification_table[(link.n1.id, link.n2.id)] = [link.fidelity]
+        if (link.n1, link.n2) not in purification_table.keys(): 
+            purification_table[(link.n1, link.n2)] = [link.fidelity]
         else:
             # Apply Formula to find max purified fidelity
-            x1, x2 = link.fidelity, purification_table[link.n1.id, link.n2.id][-1]
-            purification_table[(link.n1.id, link.n2.id)].append(purify(x1, x2))
+            x1, x2 = link.fidelity, purification_table[link.n1, link.n2][-1]
+            purification_table[(link.n1, link.n2)].append(purify(x1, x2))
     return purification_table
 
 class QPath():
@@ -98,13 +98,17 @@ class QPath():
     def calc_path_fidelity(self, path):
         fidelity = 1
         for i in range(len(path) - 1):
-            fidelity * self.purification_table[(path[i], path[i+1])][0]
+            fidelity = fidelity * self.purification_table[(path[i], path[i+1])][0]
         return fidelity
                 
     def min_fidelity_link(self, path):
         min_fid = 1
+        n1 = n2 = path[0]
         for i in range(len(path) - 1):
-            min_fid = min(self.purification_table[(path[i], path[i+1])][0])
-        return min_fid
+            if min_fid < self.purification_table[(path[i], path[i+1])][0]:
+                min_fid = self.purification_table[(path[i], path[i+1])][0]
+                n1 = path[i]
+                n2 = path[i+1]
+        return (n1, n2)
             
             

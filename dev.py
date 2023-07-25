@@ -7,7 +7,8 @@ topo = Topo(netTopology)
 algo = QPath(topo, 0)
 
 algo.P2
-# print(topo.nodes[0], topo.nodes[1])
 
-# print(algo.returns_shortest_path(topo.nodes[0], topo.nodes[3]))
+path = algo.returns_shortest_path(topo.nodes[0], topo.nodes[3])
+print(path)
+print(algo.min_fidelity_link(path))
 
