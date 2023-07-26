@@ -54,11 +54,16 @@ class QPath():
         update_graph = self.topo
         path = self.returns_shortest_path(source, dst)
         path_fidelity = self.calc_path_fidelity(path)
+        cost = 0
 
         # for Hmin: E|C|:
         for min_hops in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
             while path_fidelity < self.threshold:
-                purify_link = self.min_fidelity_link(path)
+                link = self.min_fidelity_link(path)
+                cost += len(self.purification_table[link]) - 1 # Num entanglements used for purification
+                self.purification_table[link] = self.purification_table[link][-1] 
+                path_fidelity = self.calc_path_fidelity(path)
+            cost += len(path) - 1 # Num entanglements used for swapping
                 
                 
     def shortest_path_BFS(self, source, dst):

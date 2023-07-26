@@ -28,3 +28,19 @@ class PriorityQueue:
 
     def pop(self):
         return heapq.heappop(self._data)[-1]
+
+class MinHeap:
+    def __init__(self):
+        self._data = []
+        self._length = 0
+    
+    def push(self, priority, item):
+        self._length += 1
+        heapq.heappush(self._data, (priority, item))
+                       
+    def pop(self):
+        self._length -= 1
+        return heapq.heappop(self._data)
+    
+    def get_length(self):
+        return self._length
