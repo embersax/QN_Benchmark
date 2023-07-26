@@ -15,6 +15,12 @@ from algorithm.AlgorithmBase import Algorithm
 
 import shortestpaths as sp
 
+@dataclass
+class PossiblePaths:
+    SDpair: tuple
+    shortestPaths: list[tuple] = None
+    marked: bool = False
+
 # Mainly P2 changes (maximize served quantum-user pairs and expected throughput)
 class MultiEntanglement(Algorithm):
     def __init__(self, topo, allowRecoveryPaths=False):
@@ -24,16 +30,16 @@ class MultiEntanglement(Algorithm):
         # An element in the list is: [(s_node, d_node), shortestPaths]
         # Where shortestPathsX is: [([s_node.id, path_node1.id, ..., d_node.id], cost), (...)]
         self.shortestPathsForPairs = []
-         # This is a list of PickedPaths
+        # This is a list of PickedPaths
         self.majorPaths = []
         #  HashMap<PickedPath, LinkedList<PickedPath>>()
         self.recoveryPaths = {}
         self.pathToRecoveryPaths = {}
     
-    # Sort each S-D pair list of paths by cost in ascending order
-    def sortPathsByCost(self):
+    # Sort each S-D pair list of paths by cost in ascending order if order is True
+    def sortPathsByCost(self, order=True):
         for i in range(0, len(self.shortestPathsForPairs)):
-            self.shortestPathsForPairs[i][1].sort(key=lambda x: x[1])
+            self.shortestPathsForPairs[i].shortestPaths.sort(key=lambda x: x[1], reverse=order)
     
     # Maximize source-destination pairs
     # Select main routing path for each pair
@@ -45,7 +51,8 @@ class MultiEntanglement(Algorithm):
         for pair in self.srcDstPairs:
             src, dst = pair[0], pair[1]
             shortestPaths = self.topo.shortestPathYenAlg(src.id, dst.id, retrievedPathNum)
-            self.shortestPathsForPairs.append([pair, shortestPaths])
+            #self.shortestPathsForPairs.append([pair, shortestPaths])
+            self.shortestPathsForPairs.append(PossiblePaths(pair,shortestPaths))
         print(str(self.shortestPathsForPairs))
         print("Sort paths by shortest to longest: ")
         # Sort paths by shortest to longest
@@ -53,8 +60,8 @@ class MultiEntanglement(Algorithm):
         print(str(self.shortestPathsForPairs))
         
         # For each S-D pair, check if it has the correct number of paths
-        for i in range(0, len(self.srcDstPairs)):
-            pathNum = len(self.shortestPathsForPairs[i][1])
+        for pair in self.shortestPathsForPairs:
+            pathNum = len(pair.shortestPaths)
             if pathNum < expectedPathNum:
                 # Add paths until S-D pair has M paths
                 # Note: for smaller topologies, there wouldn't be other unique paths to add
@@ -63,12 +70,13 @@ class MultiEntanglement(Algorithm):
                 print("Need to delete " + str(pathNum - expectedPathNum) + " paths")
                 # Delete largest cost paths until M paths
                 for extraPath in range(0, pathNum - expectedPathNum):
-                    self.shortestPathsForPairs[i][1].pop(-1)
+                    pair.shortestPaths.pop(-1)
         print("Final Result: ")
         print(str(self.shortestPathsForPairs))
-    
-    def branchAndPrice1(self):
+    # def branchAndPrice1(self):
         # Given current path, the selected path and ?
+        # for paths in shortestPaths:
+        #     if
         # new trimmed list of selectivePaths() = empty
         # for pair, paths in self.shortestPathsForPairs:
         #     if paths without trim anded with self.shortestPathsForPairs and self.shortestPathsForPairs is possible:
@@ -82,16 +90,20 @@ class MultiEntanglement(Algorithm):
     
     # Given a list of paths for S-D pairs with selectivePaths(),
     # select one main shortest distance path for each S-D pair
-    def integerSolution1(self):
+    # def integerSolution1(self):
         # Set selected main path of S-D pair as 0
         # Set path signal of all paths for each S-D pair as 0
         # Sort the list of paths from selectivePaths() in descending order
-        # for pair, paths in self.shortestPathsForPairs:
+        # self.sortPathsByCost(False)
+        # Select S-D pair with highest path cost
+        # max(self.shortestPathsForPairs, key=lambda x: x.shortestPaths[0][1]).marked = True
+        #for item in self.shortestPathsForPairs:
         #     if ? (might be path from selectivePaths) == 1:
         #         mark S-D pair by setting path signal as 1?
         
         # Find max path from selectivePaths() <1 and satisfies s-d not entangled
         #self.branchAndPrice1()
+        
     
     # def branchAndPrice2(self):
     
