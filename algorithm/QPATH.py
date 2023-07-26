@@ -1,7 +1,7 @@
 # topo imports do not work in algorithms dir
 from topo.Topo import Topo
 from algorithm.AlgorithmBase import Algorithm
-from utils.CollectionUtils import PriorityQueue
+from utils.CollectionUtils import MinHeap
 import sys
 
 # Purification table = {
@@ -47,24 +47,27 @@ class QPath():
         self.purification_table = remove_lower_threshold(populate_purification_table({}, self.topo), self.threshold)
         self.name = 'QPath'
     def P2(self, source, dst, reqs):
-        self.q = PriorityQueue()
-        shortest_route_length = self.shortest_path_BFS(self.source, self.dst)
+        pq = MinHeap()
+        shortest_route_length = self.shortest_path_BFS(source, dst)
         if shortest_route_length == -1:
             return
         update_graph = self.topo
-        path = self.returns_shortest_path(source, dst)
-        path_fidelity = self.calc_path_fidelity(path)
-        cost = 0
 
         # for Hmin: E|C|:
         for min_hops in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
-            while path_fidelity < self.threshold:
-                link = self.min_fidelity_link(path)
-                cost += len(self.purification_table[link]) - 1 # Num entanglements used for purification
-                self.purification_table[link] = self.purification_table[link][-1] 
+            for i in range(reqs):
+                cost = 0
+                path = self.returns_shortest_path(source, dst)
                 path_fidelity = self.calc_path_fidelity(path)
-            cost += len(path) - 1 # Num entanglements used for swapping
-                
+
+                while path_fidelity < self.threshold:
+                    link = self.min_fidelity_link(path)
+                    cost += len(self.purification_table[link]) - 1 # Num entanglements used for purification
+                    self.purification_table[link] = self.purification_table[link][-1] # Update table
+                    path_fidelity = self.calc_path_fidelity(path)
+                cost += len(path) - 1 # Num entanglements used for swapping
+                pq.push(cost, path)
+        return pq.pop()
                 
     def shortest_path_BFS(self, source, dst):
         # returns min distance by num hops between two nodes
@@ -92,7 +95,6 @@ class QPath():
         while queue:
             vertex, path = queue.pop(0)
             visited.add(vertex)
-            print(vertex)
             # Getting nodes from the links, link.n2 is an adjacent node
             for link in vertex.links:
                 if link.n2 == dst:
