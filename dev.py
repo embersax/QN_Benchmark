@@ -6,7 +6,12 @@ topo = Topo(netTopology)
 
 algo = QPath(topo, 0.95)
 
-algo.P2
+from collections import Counter
+l = []
+for link in topo.links:
+    l.append((link.n1, link.n2))
+d = Counter(l)
 
-print(algo.P2(topo.nodes[0], topo.nodes[3], 1))
+res =  algo.P2(topo.nodes[0], topo.nodes[3], 1) 
+assert res[0] == d[topo.nodes[0], topo.nodes[3]]
 

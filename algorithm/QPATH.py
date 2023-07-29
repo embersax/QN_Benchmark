@@ -127,6 +127,6 @@ class QPath():
                 n1 = path[i]
                 n2 = path[i+1]
         return (n1, n2) # Doesn't actually return link object, just two nodes
-
+    
             
             
