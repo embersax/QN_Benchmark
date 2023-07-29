@@ -34,9 +34,9 @@ class MinHeap:
         self._data = []
         self._length = 0
     
-    def push(self, priority, item):
+    def push(self, priority, item1, item2):
         self._length += 1
-        heapq.heappush(self._data, (priority, item))
+        heapq.heappush(self._data, (priority, item1, item2))
                        
     def pop(self):
         self._length -= 1

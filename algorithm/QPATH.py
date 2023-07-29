@@ -54,20 +54,24 @@ class QPath():
         update_graph = self.topo
 
         # for Hmin: E|C|:
-        for min_hops in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
-            for i in range(reqs):
-                cost = 0
-                path = self.returns_shortest_path(source, dst)
-                path_fidelity = self.calc_path_fidelity(path)
+        # for min_hops in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
+        for i in range(reqs):
+            cost = 0
+            D_pur = [] # Purification Decisions
+            path = self.returns_shortest_path(source, dst)
+            path_fidelity = self.calc_path_fidelity(path)
 
-                while path_fidelity < self.threshold:
-                    link = self.min_fidelity_link(path)
-                    cost += len(self.purification_table[link]) - 1 # Num entanglements used for purification
-                    self.purification_table[link] = self.purification_table[link][-1] # Update table
-                    path_fidelity = self.calc_path_fidelity(path)
-                cost += len(path) - 1 # Num entanglements used for swapping
-                pq.push(cost, path)
+            while path_fidelity < self.threshold:
+                link = self.min_fidelity_link(path) # Identify link with minimum fidelity to purify
+                D_pur.append(link)
+                cost += len(self.purification_table[link]) - 1 # Num entanglements used for purification
+                self.purification_table[link] = [self.purification_table[link][-1]] # Update table
+                path_fidelity = self.calc_path_fidelity(path) # Since calc path fid is based off table, updates in table affect fidelity
+                update_graph
+            cost += len(path) - 1 # Num entanglements used for swapping
+            pq.push(cost, path, D_pur)
         return pq.pop()
+        
                 
     def shortest_path_BFS(self, source, dst):
         # returns min distance by num hops between two nodes
@@ -118,10 +122,11 @@ class QPath():
         min_fid = 1
         n1 = n2 = path[0]
         for i in range(len(path) - 1):
-            if min_fid < self.purification_table[(path[i], path[i+1])][0]:
+            if self.purification_table[(path[i], path[i+1])][0] < min_fid:
                 min_fid = self.purification_table[(path[i], path[i+1])][0]
                 n1 = path[i]
                 n2 = path[i+1]
-        return (n1, n2)
+        return (n1, n2) # Doesn't actually return link object, just two nodes
+
             
             
