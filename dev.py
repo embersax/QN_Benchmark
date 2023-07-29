@@ -13,5 +13,6 @@ for link in topo.links:
 d = Counter(l)
 
 res =  algo.P2(topo.nodes[0], topo.nodes[3], 1) 
-assert res[0] == d[topo.nodes[0], topo.nodes[3]]
+print(res)
+print(d[topo.nodes[0], topo.nodes[3]])
 

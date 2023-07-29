@@ -64,10 +64,9 @@ class QPath():
             while path_fidelity < self.threshold:
                 link = self.min_fidelity_link(path) # Identify link with minimum fidelity to purify
                 D_pur.append(link)
-                cost += len(self.purification_table[link]) - 1 # Num entanglements used for purification
-                self.purification_table[link] = [self.purification_table[link][-1]] # Update table
+                cost += 1
+                self.purification_table[link] = self.purification_table[link][1:]
                 path_fidelity = self.calc_path_fidelity(path) # Since calc path fid is based off table, updates in table affect fidelity
-                update_graph
             cost += len(path) - 1 # Num entanglements used for swapping
             pq.push(cost, path, D_pur)
         return pq.pop()
