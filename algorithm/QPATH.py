@@ -133,10 +133,11 @@ class QPath():
         def dijkstra(src):
             dist = {node: float('inf') for node in self.topo.nodes}
             dist[src] = 0
-            heap = [(0, src)]
+            heap = MinHeap()
+            heap.push(0, src.id, src) # Will break if heap evaluates objects, so use src.id to stop all comparison ties
 
-            while heap:
-                curr_dist, curr_node = heapq.heappop(heap)
+            while heap.get_length() > 0:
+                curr_dist, curr_node_id, curr_node = heap.pop()
 
                 if curr_dist > dist[curr_node]:
                     continue
@@ -145,7 +146,7 @@ class QPath():
                     distance = curr_dist + 1
                     if distance < dist[neighbor]:
                         dist[neighbor] = distance
-                        heapq.heappush(heap, (distance, neighbor))
+                        heap.push(distance, neighbor.id, neighbor)
             return dist
 
         paths = []
@@ -153,11 +154,11 @@ class QPath():
         if min_distances[dst] == float('inf'):
             return paths
 
-        heap = []
-        heapq.heappush(heap, (0, [src]))
-
-        while heap and len(paths) < k:
-            curr_dist, curr_path = heapq.heappop(heap)
+        heap = MinHeap()
+        i = 0
+        heap.push(0, i, [src])
+        while heap.get_length() > 0 and len(paths) < k:
+            curr_dist, iter, curr_path = heap.pop()
             curr_node = curr_path[-1]
 
             if curr_node == dst:
@@ -166,8 +167,9 @@ class QPath():
 
             for neighbor in self.topo.kHopNeighbors(curr_node, 1):
                 if neighbor not in curr_path:
+                    i += 1
                     new_path = curr_path + [neighbor]
-                    heapq.heappush(heap, (curr_dist + 1, new_path))
+                    heap.push(curr_dist + 1, i, new_path)
         return paths
         
                 
