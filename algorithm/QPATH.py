@@ -2,7 +2,7 @@
 from topo.Topo import Topo
 from algorithm.AlgorithmBase import Algorithm
 from utils.CollectionUtils import MinHeap
-import sys
+import heapq
 
 # Purification table = {
 #                       (node1, node2) : [fidelity at 0 purifications..., fidelity at max purifications]
@@ -53,23 +53,25 @@ class QPath():
             return
         update_graph = self.topo
 
+        return self.k_shortest_paths(source, dst, 3)
         # for Hmin: E|C|:
-        # for min_hops in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
-        for i in range(reqs):
-            cost = 0
-            D_pur = [] # Purification Decisions
-            path = self.returns_shortest_path(source, dst)
-            path_fidelity = self.calc_path_fidelity(path)
+        # for min_cost in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
+        #     cost = 0
+        #     D_pur = [] # Purification Decisions
+        #     paths = [] # List of paths with cost = min_cost
+        #     path = self.returns_shortest_path(source, dst)
+        #     path_fidelity = self.calc_path_fidelity(path)
+        #     while path_fidelity < self.threshold:
+        #         link = self.min_fidelity_link(path) # Identify link with minimum fidelity to purify
+        #         D_pur.append(link)
+        #         cost += 1
+        #         self.purification_table[link] = self.purification_table[link][1:]
+        #         path_fidelity = self.calc_path_fidelity(path) # Since calc path fid is based off table, updates in table affect fidelity
+        #     cost += len(path) - 1 # Num entanglements used for swapping
+        #     pq.push(cost, path, D_pur)
 
-            while path_fidelity < self.threshold:
-                link = self.min_fidelity_link(path) # Identify link with minimum fidelity to purify
-                D_pur.append(link)
-                cost += 1
-                self.purification_table[link] = self.purification_table[link][1:]
-                path_fidelity = self.calc_path_fidelity(path) # Since calc path fid is based off table, updates in table affect fidelity
-            cost += len(path) - 1 # Num entanglements used for swapping
-            pq.push(cost, path, D_pur)
-        return pq.pop()
+            
+            
         
                 
     def shortest_path_BFS(self, source, dst):
@@ -127,5 +129,46 @@ class QPath():
                 n2 = path[i+1]
         return (n1, n2) # Doesn't actually return link object, just two nodes
     
-            
-            
+    def k_shortest_paths(self, src, dst, k):
+        def dijkstra(src):
+            dist = {node: float('inf') for node in self.topo.nodes}
+            dist[src] = 0
+            heap = [(0, src)]
+
+            while heap:
+                curr_dist, curr_node = heapq.heappop(heap)
+
+                if curr_dist > dist[curr_node]:
+                    continue
+    
+                for neighbor in self.topo.kHopNeighbors(curr_node, 1):
+                    distance = curr_dist + 1
+                    if distance < dist[neighbor]:
+                        dist[neighbor] = distance
+                        heapq.heappush(heap, (distance, neighbor))
+            return dist
+
+        paths = []
+        min_distances = dijkstra(src)
+        if min_distances[dst] == float('inf'):
+            return paths
+
+        heap = []
+        heapq.heappush(heap, (0, [src]))
+
+        while heap and len(paths) < k:
+            curr_dist, curr_path = heapq.heappop(heap)
+            curr_node = curr_path[-1]
+
+            if curr_node == dst:
+                paths.append(curr_path)
+                continue
+
+            for neighbor in self.topo.kHopNeighbors(curr_node, 1):
+                if neighbor not in curr_path:
+                    new_path = curr_path + [neighbor]
+                    heapq.heappush(heap, (curr_dist + 1, new_path))
+        return paths
+        
+                
+                

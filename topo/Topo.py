@@ -401,7 +401,7 @@ class Topo:
                 # From the current node, we take all the nodes it has links with. We then take the ones that are not yet
                 # registered and build a set out of them.
                 unregisteredNeighbors = set(filter(lambda x: x.id not in registered,
-                                                   [Edge(link.node1, link.node2).otherThan(current) for link in
+                                                   [Edge(link.n1, link.n2).otherThan(current) for link in
                                                     current.links]))
 
                 for unregisteredNeighbor in unregisteredNeighbors:
@@ -423,7 +423,7 @@ class Topo:
             else:
                 res.append(self.sentinal)
 
-        res = set(filter(lambda x: x != self.sentianl, res))
+        res = set(filter(lambda x: x != self.sentinal, res))
 
         return res
 
