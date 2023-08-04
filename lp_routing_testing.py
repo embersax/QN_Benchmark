@@ -5,100 +5,28 @@ import networkx as nx
 from pulp import *
 from random import seed
 from random import randint
-from random import shuffle
 from Grap_reading import graph_read, Mod_net
-from math import exp
-from  topo.Topo import *
+from  topo.Topo import Topo
 from utils.utils import *
-import warnings
-warnings.filterwarnings("ignore")
 
 
-min_len = 1  # minimum path length
+dem = 4  # Total number of demands
+min_len = 6  # minimum path length
 max_len = 10  # maximum path length
-n_demands = 5  # Total number of demands
 q = 0.5  # BSM success probability
-repeat = 1
-rand_seed = 85
 
 Arcs = []
 D = []  # Modified demand set
-length_path = []  # path length constraint
+length = []  # path length constraint
 D_acc = []  # Actual demand set
 
 Aff = []  # Variables for the LP objective function
 vars = []  # LP variables
 
-
-
-
-
-
-def simpleTest():
-    netTopology = Topo.generateString(30, 0.6, 5, 0.1, 6)
-
-    alphas = []
-    p = [.8, .5]
-    for expectedAvgP in p:
-        alpha = step = .1
-        lastAdd = True
-
-        while True:
-            lines = list(netTopology.split('\n'))
-            lines[1] = str(alpha)
-            topo = Topo('\n'.join(lines))
-
-            avgP = float(sum(list(map(lambda it: exp(-alpha * length([it.n1.loc, it.n2.loc])), topo.links)))) / len(
-                topo.links)
-
-            if abs(avgP - expectedAvgP) / expectedAvgP < .001:
-                break
-
-            elif avgP > expectedAvgP:
-                if not lastAdd: step /= 2
-                alpha += step
-                lastAdd = True
-
-            else:
-                if lastAdd: step /= 2
-                alpha -= step
-                lastAdd = False
-
-        alphas.append(alpha)
-    return topo
-
-topo = simpleTest()
-
-# Get the nodes and edges from format_topology
-nodes, edges = format_topology(topo)
-
-#print("Original Nodes:") # e.g. [0,1,...,29]
-#print(nodes)
-
-# Increment each node by 1, prevent modified nodes to be negative
-nodes = [node + 1 for node in nodes]
-
-#print("Original Nodes:") # e.g. [1,...,30]
-#print(nodes)
-
-
-# Create a new graph
-G = nx.Graph()
-
-# Add the nodes to the graph
-G.add_nodes_from(nodes)
-#print("After nx:", G.nodes) # e.g. [1,...,30,0]
-
-# Add the edges to the graph
-# Since the edges include weights, we can use the add_weighted_edges_from function
-weighted_edges = [(a, b, weight_dict['weight']) for a, b, weight_dict in edges]
-
-G.add_weighted_edges_from(weighted_edges)
-print(G.nodes)
-print(G.edges(data=True))
+G = graph_read('Surfnet.graphml.xml')  # Reading the graph
 n = len(list(G.nodes()))
 # Seed for generating random numbers
-seed(rand_seed)
+seed(85)
 
 for (i, j) in G.edges():
     Arcs.append((i, j, list(G.edges[i, j].values())[0]))
@@ -109,33 +37,21 @@ G_mod = nx.DiGraph()  # Modified network
 G_mod.add_nodes_from(Nodes_mod)
 G_mod.add_weighted_edges_from(Arcs_mod)
 
-
 # Demand Creation
-def funInLine135(combs, nsd):
-    shuffle(combs)
-    return list(map(lambda it: (it[0].id, it[1].id), combs[:nsd]))
-
-
-testSetIter, testSet = [i for i in range(n_demands, n_demands+1)], []
-for nsd in testSetIter:
-    combs = list(combinations(topo.nodes, 2))
-    testSet.append(funInLine135(combs, nsd))#, repeat))
-#print("testset:", testSet)  # e.g. testSet = [[(12, 13)], [(4, 27), (1, 8)]]
-
-D_acc = [pair for sublist in testSet for pair in sublist] # e.g. Demands:  [(12, 13), (4, 27), (1, 8)]
-
-l = randint(min_len, max_len)
-
-for x in D_acc:
+for i in range(dem):
+    s = 1
+    t = 1
+    l = randint(min_len, max_len)
+    while s == t:
+        s = randint(1, n)
+        t = randint(1, n)
+        D_acc.append((s, t))
     for k in range(l):
-        D.append(((x[0] - 1) * (max_len + 1) + 1, (x[1] - 1) * (max_len + 1) + k + 2))
-        length_path.append(k + 1)
-
-
-# output
+        D.append(((s - 1) * (max_len + 1) + 1, (t - 1) * (max_len + 1) + k + 2))
+        length.append(k + 1)
 print("Demands: ", D_acc)
 print("Modified Demand: ", D)
-print("Lengths: ", length_path)
+print("Lengths: ", length)
 tot_dem = len(D)
 
 sum_in = [None] * len(Nodes_mod) * tot_dem
@@ -146,13 +62,11 @@ for k in range(tot_dem):
     temp_vars = []
 
     for (i, j, w) in Arcs_mod:
-        #x = LpVariable(str((i, j, k)), lowBound=0, upBound=w, cat='Continuous')
-        #print(f"{i},{j},{k}")
-        x = LpVariable(f"({i},{j},{k})", lowBound=0, upBound=w, cat='Continuous')
+        x = LpVariable(str((i, j, k)), lowBound=0, upBound=w, cat='Continuous')
         temp_vars.append((i, j, k, x))
 
         if (i == D[k][0]):
-            Aff.append((x, q ** (length_path[k] - 1)))
+            Aff.append((x, q ** (length[k] - 1)))
 
     vars.append(temp_vars)
 
@@ -162,7 +76,7 @@ prob = LpProblem("Routing Problem", LpMaximize)
 # Creates the objective function
 
 flow = LpAffineExpression(Aff)
-print("flow:", flow)
+print(flow)
 prob += flow, "Total Rate"
 
 # Creates all problem constraints - this ensures the amount going into each node is at least equal to
@@ -215,5 +129,4 @@ for v in prob.variables():
         non_zero_var.append(v)
 
 # The optimised objective function value is printed to the screen
-# (Modified_Node1, Modified_Node2, # of Modified_Demand) = # of Links
 print("Total Achievable Rate = ", value(prob.objective))
