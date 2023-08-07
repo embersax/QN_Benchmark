@@ -2,6 +2,7 @@
 from topo.Topo import Topo
 from algorithm.AlgorithmBase import Algorithm
 from utils.CollectionUtils import MinHeap
+from collections import Counter, defaultdict
 import heapq
 
 # Purification table = {
@@ -52,26 +53,39 @@ class QPath():
         if shortest_route_length == -1:
             return
         update_graph = self.topo
+        D_pur = defaultdict(lambda: 0)
 
-        return self.k_shortest_paths(source, dst, 3)
         # for Hmin: E|C|:
-        # for min_cost in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
-        #     cost = 0
-        #     D_pur = [] # Purification Decisions
-        #     paths = [] # List of paths with cost = min_cost
-        #     path = self.returns_shortest_path(source, dst)
-        #     path_fidelity = self.calc_path_fidelity(path)
-        #     while path_fidelity < self.threshold:
-        #         link = self.min_fidelity_link(path) # Identify link with minimum fidelity to purify
-        #         D_pur.append(link)
-        #         cost += 1
-        #         self.purification_table[link] = self.purification_table[link][1:]
-        #         path_fidelity = self.calc_path_fidelity(path) # Since calc path fid is based off table, updates in table affect fidelity
-        #     cost += len(path) - 1 # Num entanglements used for swapping
-        #     pq.push(cost, path, D_pur)
+        for min_cost in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
+            paths = self.k_shortest_paths(source, dst, reqs)
+            for path in paths:
+                cost = 0
+                path_fidelity = self.calc_path_fidelity(path)
+                while path_fidelity < self.threshold:
+                    link = self.min_fidelity_link(path) # Identify link with minimum fidelity to purify
+                    D_pur[link] += 1
+                    cost += 1
+                    self.purification_table[link] = self.purification_table[link][1:]
+                    path_fidelity = self.calc_path_fidelity(path) # Since calc path fid is based off table, updates in table affect fidelity
+                cost += len(path) - 1 # Num entanglements used for swapping
+                pq.push(cost, path, D_pur)
+            # path = pq.pop()
+            # while path[0] <= min_cost + 1:
+            #     if self.path_width(path, D_pur) >= 1:
+                    # for edge in path:
+                    #   edge - min(path_width, Reqs) - num_purification on the edge (from D_pur)
+            #     path = pq.pop()
+        return pq
 
-            
-            
+
+
+    def path_width(self, path, D_pur):
+        # Finds Wmin(i, j) defined in pg7
+        min_width = 0
+        n1 = n2 = path[0]
+        for i in range(len(path) - 1):
+            min_width = min(min_width, len(self.purification_table[(path[i], path[i+1])])/(D_pur[n1, n2] + 1))
+        return min_width
         
                 
     def shortest_path_BFS(self, source, dst):
@@ -91,27 +105,8 @@ class QPath():
                     dist[link.n2] = min(dist[source] + 1, dist[link.n2])
         return -1
     
-
-    def returns_shortest_path(self, source, dst):
-        # Returns the path in list form [node, node]
-        queue = [(source,[source])]
-        visited = set()
-
-        while queue:
-            vertex, path = queue.pop(0)
-            visited.add(vertex)
-            # Getting nodes from the links, link.n2 is an adjacent node
-            for link in vertex.links:
-                if link.n2 == dst:
-                    return path + [dst]
-                else:
-                    if link.n2 not in visited:
-                        visited.add(link.n2)
-                        queue.append((link.n2, path + [link.n2]))
-        return queue
-    
-    
     def calc_path_fidelity(self, path):
+        # Calculates fid through 0 purification links in pur table
         fidelity = 1
         for i in range(len(path) - 1):
             fidelity = fidelity * self.purification_table[(path[i], path[i+1])][0]
@@ -125,12 +120,12 @@ class QPath():
         for i in range(len(path) - 1):
             if self.purification_table[(path[i], path[i+1])][0] < min_fid:
                 min_fid = self.purification_table[(path[i], path[i+1])][0]
-                n1 = path[i]
-                n2 = path[i+1]
+                n1, n2 = path[i], path[i+1]
         return (n1, n2) # Doesn't actually return link object, just two nodes
     
+    # Do I need shortest path with <= k hops or k shortest paths???
     def k_shortest_paths(self, src, dst, k):
-        def dijkstra(src):
+        def dijkstra(src): # Dijkstra's makes this an offline algorithm
             dist = {node: float('inf') for node in self.topo.nodes}
             dist[src] = 0
             heap = MinHeap()
@@ -151,7 +146,7 @@ class QPath():
 
         paths = []
         min_distances = dijkstra(src)
-        if min_distances[dst] == float('inf'):
+        if min_distances[dst] == float('inf'): # No S-D path
             return paths
 
         heap = MinHeap()
@@ -172,5 +167,4 @@ class QPath():
                     heap.push(curr_dist + 1, i, new_path)
         return paths
         
-                
                 
