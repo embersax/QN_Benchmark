@@ -529,8 +529,8 @@ class Topo:
                 edgeAndNodes.append(edgeNodes)
         
         # Uncomment below to print a list of edges (specifies end nodes of edges)
-        print("edgeAndNodes:")
-        print(edgeAndNodes)
+        # print("edgeAndNodes:")
+        # print(edgeAndNodes)
         
         G = nx.Graph()
         G.add_edges_from(edgeAndNodes)
