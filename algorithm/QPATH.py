@@ -21,6 +21,12 @@ def sort_link(n1, n2):
         return (n2, n1)
     return (n1, n2)
 
+def find_neighbors(node):
+    neigh = set()
+    for link in node.links:
+        neigh.add(link.n1)
+        neigh.add(link.n2)
+    return list(neigh)
 
 # Removes all links that have max fidelity < required threshold
 def remove_lower_threshold(purification_table, threshold):
@@ -58,21 +64,22 @@ class QPath():
 
         # for Hmin: E|C|:
         # for min_cost in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
-        for min_cost in range(4):
+        for min_cost in range(1):
             paths = self.k_shortest_paths(source, dst, reqs)
             for path in paths:
-                print(path)
                 cost = 0
                 D_pur = defaultdict(lambda: 0)
                 path_fidelity = self.calc_path_fidelity(path, D_pur)
+                print(f"Original path fid: {path_fidelity}")
                 while path_fidelity < self.threshold:
                     link = self.min_fidelity_link(path, D_pur) # Identify link with minimum fidelity to purify
+                    print(f"current link: {link}")
                     if link[0] == link[1]: # No possible purifications
                         break
                     D_pur[link] += 1
                     cost += 1
                     path_fidelity = self.calc_path_fidelity(path, D_pur) 
-                    break
+                    print(f"updated path fidelity: {path_fidelity}")
                 cost += len(path) - 1 # Num entanglements used for swapping
                 pq.push(cost, path, D_pur)
             # route = pq.pop() # (cost, path, D_pur)
@@ -84,6 +91,8 @@ class QPath():
             #             # has_capacity(edge, cap) and has_memory(edge, mem)
             #             # link - min(path_width, reqs) - num_purification on the edge (from D_pur)
             #     route = pq.pop()
+        while pq.get_length() > 0:
+            print(pq.pop())
         return pq
 
     def has_memory(link, mem):
@@ -136,7 +145,7 @@ class QPath():
             if link_fid < min_fid:
                 min_fid = link_fid
                 n1, n2 = path[i], path[i+1]
-        return (n1, n2) # Doesn't actually return link object, just two nodes
+        return sort_link(n1, n2) # Doesn't actually return link object, just two nodes
     
     def k_shortest_paths(self, src, dst, k):
         def dijkstra(src): # Dijkstra's makes this an offline algorithm
@@ -150,8 +159,8 @@ class QPath():
 
                 if curr_dist > dist[curr_node]:
                     continue
-
-                for neighbor in self.topo.kHopNeighbors(curr_node, 1):
+                
+                for neighbor in find_neighbors(curr_node):
                     distance = curr_dist + 1
                     if distance < dist[neighbor]:
                         dist[neighbor] = distance
@@ -174,7 +183,7 @@ class QPath():
                 paths.append(curr_path)
                 continue
 
-            for neighbor in self.topo.kHopNeighbors(curr_node, 1):
+            for neighbor in find_neighbors(curr_node):
                 if neighbor not in curr_path:
                     i += 1
                     new_path = curr_path + [neighbor]
