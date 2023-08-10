@@ -56,7 +56,6 @@ class QPath():
         self.purification_table = remove_lower_threshold(populate_purification_table({}, self.topo), self.threshold)
         self.name = 'QPath'
     def P2(self, source, dst, reqs):
-        pq = MinHeap()
         shortest_route_length = self.shortest_path_BFS(source, dst)
         if shortest_route_length == -1:
             return
@@ -65,9 +64,11 @@ class QPath():
         # for Hmin: E|C|:
         # for min_cost in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
         for min_cost in range(1):
-            paths = self.k_shortest_paths(source, dst, reqs)
-            for path in paths:
-                cost = 0
+            pq = MinHeap()
+            paths = self.topo.shortestPathYenAlg(source, dst, reqs)
+            for i in range(len(paths)):
+                path = paths[i][0]
+                cost = paths[i][1]
                 D_pur = defaultdict(lambda: 0)
                 path_fidelity = self.calc_path_fidelity(path, D_pur)
                 print(f"Original path fid: {path_fidelity}")
@@ -80,8 +81,7 @@ class QPath():
                     cost += 1
                     path_fidelity = self.calc_path_fidelity(path, D_pur) 
                     print(f"updated path fidelity: {path_fidelity}")
-                cost += len(path) - 1 # Num entanglements used for swapping
-                pq.push(cost, path, D_pur)
+                pq.push(cost, D_pur, path) # Cost won't always be unique
             # route = pq.pop() # (cost, path, D_pur)
             # while pq.get_length() > 0 and route[0] <= min_cost + 1:
             #     path_width = self.calc_path_width(route)
@@ -147,47 +147,3 @@ class QPath():
                 n1, n2 = path[i], path[i+1]
         return sort_link(n1, n2) # Doesn't actually return link object, just two nodes
     
-    def k_shortest_paths(self, src, dst, k):
-        def dijkstra(src): # Dijkstra's makes this an offline algorithm
-            dist = {node: float('inf') for node in self.topo.nodes}
-            dist[src] = 0
-            heap = MinHeap()
-            heap.push(0, src.id, src) # Will break if heap evaluates objects, so use src.id to stop all comparison ties
-
-            while heap.get_length() > 0:
-                curr_dist, _, curr_node = heap.pop()
-
-                if curr_dist > dist[curr_node]:
-                    continue
-                
-                for neighbor in find_neighbors(curr_node):
-                    distance = curr_dist + 1
-                    if distance < dist[neighbor]:
-                        dist[neighbor] = distance
-                        heap.push(distance, neighbor.id, neighbor)
-            return dist
-
-        paths = []
-        min_distances = dijkstra(src)
-        if min_distances[dst] == float('inf'): # No S-D path
-            return paths
-
-        heap = MinHeap()
-        i = 0
-        heap.push(0, i, [src])
-        while heap.get_length() > 0 and len(paths) < k:
-            curr_dist, _, curr_path = heap.pop()
-            curr_node = curr_path[-1]
-
-            if curr_node == dst:
-                paths.append(curr_path)
-                continue
-
-            for neighbor in find_neighbors(curr_node):
-                if neighbor not in curr_path:
-                    i += 1
-                    new_path = curr_path + [neighbor]
-                    heap.push(curr_dist + 1, i, new_path)
-        return paths
-        
-                
