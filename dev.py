@@ -17,7 +17,7 @@ for i in range(1):
     algo = QPath(topo, 0.95)
 
 
-    algo.P2(topo.nodes[0], topo.nodes[3], 2)
+    algo.P2(topo.nodes[0], topo.nodes[3], 3)
 # print(res)
 # print(d[topo.nodes[0], topo.nodes[3]])
 

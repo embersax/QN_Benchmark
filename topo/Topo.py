@@ -526,11 +526,9 @@ class Topo:
                 edgeNodes = [link.n1, link.n2]
                 if edgeNodes not in edgeAndNodes:
                     edgeAndNodes.append(edgeNodes)
-            print(edgeAndNodes)
             G = nx.Graph()
             G.add_edges_from(edgeAndNodes)
             k_paths = sp.k_shortest_paths(G, source, destination, numberOfPaths, method = 'y')
-
             return k_paths
 
 

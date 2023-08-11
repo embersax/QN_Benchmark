@@ -21,13 +21,6 @@ def sort_link(n1, n2):
         return (n2, n1)
     return (n1, n2)
 
-def find_neighbors(node):
-    neigh = set()
-    for link in node.links:
-        neigh.add(link.n1)
-        neigh.add(link.n2)
-    return list(neigh)
-
 # Removes all links that have max fidelity < required threshold
 def remove_lower_threshold(purification_table, threshold):
     keys_to_del = []
@@ -71,33 +64,32 @@ class QPath():
                 cost = paths[i][1]
                 D_pur = defaultdict(lambda: 0)
                 path_fidelity = self.calc_path_fidelity(path, D_pur)
-                print(f"Original path fid: {path_fidelity}")
                 while path_fidelity < self.threshold:
                     link = self.min_fidelity_link(path, D_pur) # Identify link with minimum fidelity to purify
-                    print(f"current link: {link}")
                     if link[0] == link[1]: # No possible purifications
                         break
                     D_pur[link] += 1
                     cost += 1
                     path_fidelity = self.calc_path_fidelity(path, D_pur) 
-                    print(f"updated path fidelity: {path_fidelity}")
-                pq.push(cost, D_pur, path) # Cost won't always be unique
-            # route = pq.pop() # (cost, path, D_pur)
+                pq.push(cost, path, D_pur) # Cost won't always be unique
+            # route = pq.pop() 
             # while pq.get_length() > 0 and route[0] <= min_cost + 1:
             #     path_width = self.calc_path_width(route)
             #     if path_width >= 1:
-            #         for link in route[1]:
-            #             print(link)
-            #             # has_capacity(edge, cap) and has_memory(edge, mem)
-            #             # link - min(path_width, reqs) - num_purification on the edge (from D_pur)
+            #         for i in range(len(route[1]) - 1):
+            #             link = (route[1][i], route[1][i+1])
+            #             if self.has_memory(link, 1) and self.has_capacity(link, route[0]):
+            #                 # subtract last x elements in pur table, where x = min(path_width, reqs)*num_purifications on the edge (from D_pur), aka the cost of using the route path_width times
             #     route = pq.pop()
-        while pq.get_length() > 0:
-            print(pq.pop())
         return pq
 
-    def has_memory(link, mem):
+    def has_memory(self, link, mem):
         # T/F if link nodes have nQubits
         return min(link.n1.nQubits, link.n2.nQubits) >= mem
+
+    def has_capacity(self, link, cap):
+        # fact or cap: A link can support cap capacity
+        return len(self.purification_table[link]) >= cap
     
     def calc_path_width(self, route):
         # Finds Wmin(i, j) defined in pg7
@@ -146,4 +138,3 @@ class QPath():
                 min_fid = link_fid
                 n1, n2 = path[i], path[i+1]
         return sort_link(n1, n2) # Doesn't actually return link object, just two nodes
-    
