@@ -6,7 +6,7 @@ from pulp import *
 from random import seed
 from random import randint
 from random import shuffle
-from Grap_reading import graph_read, Mod_net
+from Grap_reading import Mod_net
 from math import exp
 from  topo.Topo import *
 from utils.utils import *
@@ -21,7 +21,7 @@ q = 0.5  # BSM success probability
 repeat = 1
 rand_seed = 85
 
-Arcs = []
+Arcs = []   #links
 D = []  # Modified demand set
 length_path = []  # path length constraint
 D_acc = []  # Actual demand set
@@ -35,6 +35,7 @@ vars = []  # LP variables
 
 
 def simpleTest():
+    global topo
     netTopology = Topo.generateString(30, 0.6, 5, 0.1, 6)
 
     alphas = []
@@ -42,7 +43,6 @@ def simpleTest():
     for expectedAvgP in p:
         alpha = step = .1
         lastAdd = True
-
         while True:
             lines = list(netTopology.split('\n'))
             lines[1] = str(alpha)
@@ -129,7 +129,9 @@ l = randint(min_len, max_len)
 for x in D_acc:
     for k in range(l):
         D.append(((x[0] - 1) * (max_len + 1) + 1, (x[1] - 1) * (max_len + 1) + k + 2))
-        length_path.append(k + 1)
+        a ,b = x[0], x[1]
+        length_path.append(k+1) # refering to
+                                  # linkLengths = sorted([(link.node1.loc - link.node2.loc) for link in self.links])
 
 
 # output
