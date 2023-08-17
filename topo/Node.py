@@ -27,6 +27,12 @@ class Node:
         # self.neighbors = {link.otherThan(self) for link in self.links}
         self.remainingQubits = nQubits
 
+        """ fidelity of link : randomly generated """
+        self.F = random.uniform(0.7, 0.95)
+        """ sets weight of each link to -ln(Fl) """
+        self.weight = (-1 * math.log(self.F))
+
+
     # add property to neighbors can avoid the error on init part when links is empty list, but I havn't done the by
     # lazy part
     @property

@@ -10,6 +10,8 @@ from algorithm import OnlineAlgorithm
 from itertools import combinations
 from algorithm.OnlineAlgorithm import OnlineAlgorithm
 
+from PurificationAlg import EPP
+
 
 def simpleTest():
     netTopology = Topo.generateString(30, 0.6, 5, 0.1, 6)
@@ -77,7 +79,9 @@ def simpleTest():
         topo = Topo(tmp_str)
         # aa =  OnlineAlgorithm(Topo(topo))
         algorithms = [
-            OnlineAlgorithm(Topo(topo))
+            OnlineAlgorithm(Topo(topo)),
+            # initiate alg here w/ input topo
+            EPP(Topo(topo))
         ]
         results = [[] * len(algorithms)]
         # here to test I just loop over algorithms list to test, and will implemment multithreads(parallelStream()) as Shouqian later.
