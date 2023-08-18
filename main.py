@@ -87,11 +87,14 @@ G = nx.Graph()
 
 # Add the nodes to the graph
 G.add_nodes_from(nodes)
+if 0 in G:
+    G.remove_node(0)
+
 #print("After nx:", G.nodes) # e.g. [1,...,30,0]
 
 # Add the edges to the graph
 # Since the edges include weights, we can use the add_weighted_edges_from function
-weighted_edges = [(a, b, weight_dict['weight']) for a, b, weight_dict in edges]
+weighted_edges = [(a+1, b+1, weight_dict['weight']) for a, b, weight_dict in edges]
 
 G.add_weighted_edges_from(weighted_edges)
 print(G.nodes)
@@ -130,8 +133,7 @@ for x in D_acc:
     for k in range(l):
         D.append(((x[0] - 1) * (max_len + 1) + 1, (x[1] - 1) * (max_len + 1) + k + 2))
         a ,b = x[0], x[1]
-        length_path.append(k+1) # refering to
-                                  # linkLengths = sorted([(link.node1.loc - link.node2.loc) for link in self.links])
+        length_path.append(k+1)
 
 
 # output
