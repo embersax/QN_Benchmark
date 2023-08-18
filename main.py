@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 
 
 min_len = 1  # minimum path length
-max_len = 10  # maximum path length
+max_len = 10  # maximum path length # TODO: way to calculate min/max len
 n_demands = 5  # Total number of demands
 q = 0.5  # BSM success probability
 repeat = 1
@@ -90,6 +90,8 @@ G.add_nodes_from(nodes)
 if 0 in G:
     G.remove_node(0)
 
+G.nodedic = {} # dictionary of node to modified nodes
+
 #print("After nx:", G.nodes) # e.g. [1,...,30,0]
 
 # Add the edges to the graph
@@ -112,7 +114,7 @@ G_mod = nx.DiGraph()  # Modified network
 G_mod.add_nodes_from(Nodes_mod)
 G_mod.add_weighted_edges_from(Arcs_mod)
 
-
+print("Dictionary:", G.nodedic)
 # Demand Creation
 def funInLine135(combs, nsd):
     shuffle(combs)
@@ -126,7 +128,7 @@ for nsd in testSetIter:
 #print("testset:", testSet)  # e.g. testSet = [[(12, 13)], [(4, 27), (1, 8)]]
 
 D_acc = [pair for sublist in testSet for pair in sublist] # e.g. Demands:  [(12, 13), (4, 27), (1, 8)]
-
+D_acc = [(a+1, b+1) for a, b in D_acc] # prevent negative node/demand
 l = randint(min_len, max_len)
 
 for x in D_acc:
@@ -134,6 +136,7 @@ for x in D_acc:
         D.append(((x[0] - 1) * (max_len + 1) + 1, (x[1] - 1) * (max_len + 1) + k + 2))
         a ,b = x[0], x[1]
         length_path.append(k+1)
+
 
 
 # output
@@ -215,7 +218,7 @@ print("Status:", LpStatus[prob.status])
 non_zero_var = []
 for v in prob.variables():
     if v.varValue > 0:
-        print(v.name, "=", v.varValue)
+        print(v.name, "=", v.varValue) # TODO: try entanglement link.py line 96
         non_zero_var.append(v)
 
 # The optimised objective function value is printed to the screen

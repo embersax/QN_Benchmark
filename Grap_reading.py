@@ -53,12 +53,17 @@ we will have the following edges,
     Nodes = []
     Arcs = []
     #print("G.nodes:", G.nodes)     # strange bug which G.nodes will have append a node "0" at the end
-    for i in G.nodes:
+    #for i in G.nodes:
         #print(i)
-        for j in range(l+1):
+        #for j in range(l+1):
             #print(i) #print the nodes
-            Nodes.append((i-1)*(l+1)+j+1)
+            #Nodes.append((i-1)*(l+1)+j+1)
             #print("Node", i,j,(i-1)*(l+1)+j+1)
+    for i in G.nodes:
+        modifications = [(i - 1) * (l + 1) + j + 1 for j in range(l + 1)]
+        Nodes.extend(modifications)
+        G.nodedic[i] = modifications
+
     for (i,j) in G.edges():
         for k in range(l):
             #Arcs.append(((i-1) * (l + 1) + k + 1, (j-1) * (l + 1) + k + 2, G[i][j]['weight']))
