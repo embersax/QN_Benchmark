@@ -67,7 +67,7 @@ def list_minus(list1, list2):
     return result
 
 
-def length(x):
+def length(x: object) -> object:
     return np.linalg.norm(np.array(x))
 
 

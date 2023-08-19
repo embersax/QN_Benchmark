@@ -31,28 +31,26 @@ def format_topology(topo):
 
     # Create a dictionary to count occurrences of each edge
     edge_counts = {}
-    """def list_minus(list1, list2):
-    result = []
-    for i in range(len(list1)):
-        result.append(list1[i] - list2[i])
-    return result"""
+    edge_length = {}
     # Loop over each Link object
     for link in topo.links:
         # Sort the node ids to combine duplicate links
         edge = (link.n1.id, link.n2.id)
         #print("n1 n2",link.n1.loc, link.n2.loc)
         #edge = tuple((link.n1, link.n2))
-
+        l = length(list_minus(link.n1.loc, link.n2.loc))
         # Increase the count for this edge
         if edge in edge_counts:
             edge_counts[edge] += 1
         else:
             edge_counts[edge] = 1
+            edge_length[edge] = l
 
     # Format the edges as tuples with weights
     edges = [(a, b, {'weight': count}) for (a, b), count in edge_counts.items()]
+    #edges = [(a, b, {'weight': count, 'length': edge_length.get((a, b), 0)}) for (a, b), count in edge_counts.items()]
 
-    return nodes, edges
+    return nodes, edges, edge_length
 
 
 

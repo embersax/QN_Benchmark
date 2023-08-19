@@ -70,7 +70,7 @@ def simpleTest():
 topo = simpleTest()
 
 # Get the nodes and edges from format_topology
-nodes, edges = format_topology(topo)
+nodes, edges, edge_length = format_topology(topo)
 
 #print("Original Nodes:") # e.g. [0,1,...,29]
 #print(nodes)
@@ -96,6 +96,9 @@ G.nodedic = {} # dictionary of node to modified nodes
 # Add the edges to the graph
 # Since the edges include weights, we can use the add_weighted_edges_from function
 weighted_edges = [(a+1, b+1, weight_dict['weight']) for a, b, weight_dict in edges]
+#weighted_edges = [(a+1, b+1, weight_dict['weight'], edge_length[(a, b)]) for a, b, weight_dict in edges]
+#weighted_edges = [(a+1, b+1, weight_dict['weight'], edge_length.get((a, b), 0)) for a, b, weight_dict in edges]
+
 
 G.add_weighted_edges_from(weighted_edges)
 print(G.nodes)
@@ -113,7 +116,7 @@ G_mod = nx.DiGraph()  # Modified network
 G_mod.add_nodes_from(Nodes_mod)
 G_mod.add_weighted_edges_from(Arcs_mod)
 
-#print("Dictionary:", G.nodedic)
+print("Dictionary:", G.nodedic)
 # Demand Creation
 def funInLine135(combs, nsd):
     shuffle(combs)
@@ -139,7 +142,8 @@ for x in D_acc:
 # output
 print("Demands: ", D_acc)
 print("Modified Demand: ", D)
-#print("Link: ", topo.links)
+print("Link: ", topo.links)
+print("Link length:", edge_length)
 print("Lengths: ", length_path)
 tot_dem = len(D)
 
@@ -156,8 +160,12 @@ for k in range(tot_dem): # for each demand
         x = LpVariable(f"({i},{j},{k})", lowBound=0, upBound=w, cat='Continuous')
         temp_vars.append((i, j, k, x))
 
-        if (i == D[k][0]):  # if src = Demand's src # TODO: try entanglement link.py line 96
-            Aff.append((x, q ** (length_path[k] - 1))) # link.node1.loc - link.node1.loc
+        if (i == D[k][0]):  # if src = Demand's src
+            #Aff.append((x, q ** (edge_length[G.nodedic[i] - 1, G.nodedic[j] - 1])))  # TODO: link.node1.loc - link.node1.loc
+            Aff.append((x, q ** (length_path[k] - 1)))
+            #print(G.nodedic[i], G.nodedic[j])
+            #print(edge_length[G.nodedic[i]-1, G.nodedic[j]-1])
+
 
     vars.append(temp_vars)
 
