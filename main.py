@@ -87,8 +87,7 @@ G = nx.Graph()
 
 # Add the nodes to the graph
 G.add_nodes_from(nodes)
-if 0 in G:
-    G.remove_node(0)
+
 
 G.nodedic = {} # dictionary of node to modified nodes
 
@@ -114,7 +113,7 @@ G_mod = nx.DiGraph()  # Modified network
 G_mod.add_nodes_from(Nodes_mod)
 G_mod.add_weighted_edges_from(Arcs_mod)
 
-print("Dictionary:", G.nodedic)
+#print("Dictionary:", G.nodedic)
 # Demand Creation
 def funInLine135(combs, nsd):
     shuffle(combs)
@@ -137,11 +136,10 @@ for x in D_acc:
         a ,b = x[0], x[1]
         length_path.append(k+1)
 
-
-
 # output
 print("Demands: ", D_acc)
 print("Modified Demand: ", D)
+#print("Link: ", topo.links)
 print("Lengths: ", length_path)
 tot_dem = len(D)
 
@@ -149,17 +147,17 @@ sum_in = [None] * len(Nodes_mod) * tot_dem
 sum_out = [None] * len(Nodes_mod) * tot_dem
 
 # Creates the boundless Variables as real numbers
-for k in range(tot_dem):
+for k in range(tot_dem): # for each demand
     temp_vars = []
 
-    for (i, j, w) in Arcs_mod:
+    for (i, j, w) in Arcs_mod: # for each src, dst, weight pair
         #x = LpVariable(str((i, j, k)), lowBound=0, upBound=w, cat='Continuous')
         #print(f"{i},{j},{k}")
         x = LpVariable(f"({i},{j},{k})", lowBound=0, upBound=w, cat='Continuous')
         temp_vars.append((i, j, k, x))
 
-        if (i == D[k][0]):
-            Aff.append((x, q ** (length_path[k] - 1)))
+        if (i == D[k][0]):  # if src = Demand's src # TODO: try entanglement link.py line 96
+            Aff.append((x, q ** (length_path[k] - 1))) # link.node1.loc - link.node1.loc
 
     vars.append(temp_vars)
 
@@ -218,7 +216,7 @@ print("Status:", LpStatus[prob.status])
 non_zero_var = []
 for v in prob.variables():
     if v.varValue > 0:
-        print(v.name, "=", v.varValue) # TODO: try entanglement link.py line 96
+        print(v.name, "=", v.varValue)
         non_zero_var.append(v)
 
 # The optimised objective function value is printed to the screen
