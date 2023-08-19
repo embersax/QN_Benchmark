@@ -12,6 +12,15 @@ import heapq
 
 # Path tracing credits to https://stackoverflow.com/questions/8922060/how-to-trace-the-path-in-a-breadth-first-search
 
+
+class Route():
+    def __init__(self, cost, path, pur_dec):
+        self.cost = cost
+        self.path = path
+        self.pur_dec = pur_dec
+    def __lt__(self, other):
+        return self.cost < other.cost
+
 # Returns the fidelity after a single purification
 def purify(f1, f2):
     return f1*f2/(f1*f2 + (1-f1)*(1-f2))
@@ -53,11 +62,11 @@ class QPath():
         if shortest_route_length == -1:
             return
         update_graph = self.topo
+        sol_paths = []
 
         # for Hmin: E|C|:
-        # for min_cost in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
-        for min_cost in range(1):
-            pq = MinHeap()
+        for min_cost in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
+            pq = []
             paths = self.topo.shortestPathYenAlg(source, dst, reqs)
             for i in range(len(paths)):
                 path = paths[i][0]
@@ -71,32 +80,38 @@ class QPath():
                     D_pur[link] += 1
                     cost += 1
                     path_fidelity = self.calc_path_fidelity(path, D_pur) 
-                pq.push(cost, path, D_pur) # Cost won't always be unique
-            # route = pq.pop() 
-            # while pq.get_length() > 0 and route[0] <= min_cost + 1:
-            #     path_width = self.calc_path_width(route)
-            #     if path_width >= 1:
-            #         for i in range(len(route[1]) - 1):
-            #             link = (route[1][i], route[1][i+1])
-            #             if self.has_memory(link, 1) and self.has_capacity(link, route[0]):
-            #                 # subtract last x elements in pur table, where x = min(path_width, reqs)*num_purifications on the edge (from D_pur), aka the cost of using the route path_width times
-            #     route = pq.pop()
-        return pq
+                heapq.heappush(pq, Route(cost, path, D_pur))
 
-    def has_memory(self, link, mem):
+                while len(pq) > 0:
+                    route = heapq.heappop(pq) 
+                    if route.cost > min_cost + 1:
+                        break
+                    print(route.path)
+                    path_width = self.calc_path_width(route)
+                    if path_width >= 1:
+                        for i in range(len(route.path) - 1):
+                            link = sort_link(route.path[i], route.path[i+1])
+                            num_usable = min(self.num_memory(link)//route.cost, self.num_capacity(link)//route.cost)
+                            # subtract last x elements in pur table, where x = min(path_width, reqs)*num_purifications on the edge (from D_pur), aka the cost of using the route path_width times
+                            self.purification_table[link] = self.purification_table[link][:num_usable*cost]
+                    sol_paths.append((route, path_width))
+        return sol_paths
+
+    def num_memory(self, link):
         # T/F if link nodes have nQubits
-        return min(link.n1.nQubits, link.n2.nQubits) >= mem
+        return min(link[0].nQubits, link[1].nQubits)
 
-    def has_capacity(self, link, cap):
+    def num_capacity(self, link):
         # fact or cap: A link can support cap capacity
-        return len(self.purification_table[link]) >= cap
+        return len(self.purification_table[link])
     
     def calc_path_width(self, route):
-        # Finds Wmin(i, j) defined in pg7
+        # Finds Wmin(i, j) (pg7)
         min_width = 0
-        n1 = n2 = route[0]
-        for i in range(len(route) - 1):
-            min_width = min(min_width, len(self.purification_table[(route[i], route[i+1])])/(route[2][n1, n2] + 1))
+        for i in range(len(route.path) - 1):
+            capacity = len(self.purification_table[sort_link(route.path[i], route.path[i+1])])
+            cost = route.pur_dec[sort_link(route.path[i], route.path[i+1])] + 1
+            min_width = max(min_width, capacity//cost)
         return min_width
         
                 

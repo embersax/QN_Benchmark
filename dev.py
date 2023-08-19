@@ -11,13 +11,13 @@ for i in range(1):
     for link in topo.links:
         l.append((link.n1, link.n2))
     d = Counter(l)
-    # print(d)
+    print(d)
 
 
     algo = QPath(topo, 0.95)
 
 
-    algo.P2(topo.nodes[0], topo.nodes[3], 3)
+    print(algo.P2(topo.nodes[0], topo.nodes[3], 3))
 # print(res)
 # print(d[topo.nodes[0], topo.nodes[3]])
 
