@@ -7,7 +7,7 @@ import heapq
 
 # Purification table = {
 #                       (node1, node2) : [fidelity at 0 purifications..., fidelity at max purifications]
-#                       (node id: 0, node id: 1)               : [0.4, 0.7, 0.9]
+#                       ...
 #                       }
 
 # Path tracing credits to https://stackoverflow.com/questions/8922060/how-to-trace-the-path-in-a-breadth-first-search
@@ -86,7 +86,6 @@ class QPath():
                     route = heapq.heappop(pq) 
                     if route.cost > min_cost + 1:
                         break
-                    print(route.path)
                     path_width = self.calc_path_width(route)
                     if path_width >= 1:
                         for i in range(len(route.path) - 1):
@@ -95,6 +94,9 @@ class QPath():
                             # subtract last x elements in pur table, where x = min(path_width, reqs)*num_purifications on the edge (from D_pur), aka the cost of using the route path_width times
                             self.purification_table[link] = self.purification_table[link][:num_usable*cost]
                     sol_paths.append((route, path_width))
+                    reqs -= path_width
+                    if reqs <= 0:
+                        return sol_paths
         return sol_paths
 
     def num_memory(self, link):
