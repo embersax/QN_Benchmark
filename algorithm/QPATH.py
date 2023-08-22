@@ -58,53 +58,53 @@ class QPath():
         self.purification_table = remove_lower_threshold(populate_purification_table({}, self.topo), self.threshold)
         self.name = 'QPath'
     def P2(self, source, dst, reqs):
-        try:
-            shortest_hops = self.topo.shortestPathYenAlg(source, dst, 1)[0][1]
-        except:
-            return "No Paths"
+        
+        shortest_hops = self.topo.shortestPathYenAlg(source, dst, 1)
         update_graph = self.purification_table
         sol_paths = []
-
+        return
         # for Hmin: E|C|:
         for min_cost in range(shortest_hops, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
             pq = []
-            paths = self.topo.shortestPathYenAlg(source, dst, reqs)
+            paths = self.topo.shortestPathYenAlg(source, dst, 3)
+            print(paths)
+            return
+
+            # Enqueue possible paths
             for i in range(len(paths)):
                 path = paths[i][0]
                 cost = paths[i][1]
                 D_pur = defaultdict(lambda: 0)
-                legal = True
                 path_fidelity = self.calc_path_fidelity(path, D_pur)
-                while path_fidelity < self.threshold:
+                while path_fidelity < self.threshold and len(pq) < reqs:
                     print(cost)
                     link = self.min_fidelity_link(path, D_pur) # Identify link with minimum fidelity to purify
-                    if link[0] == link[1]: # No possible purifications
-                        legal = False
+                    if link == -1 or cost > min_cost + 1: # No possible purifications
                         break
                     D_pur[link] += 1
                     cost += 1
-                    if cost > min_cost + 1:
-                        legal = False
-                        break
                     path_fidelity = self.calc_path_fidelity(path, D_pur) 
-                if legal:
+                if cost <= min_cost + 1 and path_fidelity >= self.threshold:
                     heapq.heappush(pq, Route(cost, path, D_pur))
 
-                while len(pq) > 0:
-                    route = heapq.heappop(pq) 
-                    if route.cost > min_cost + 1:
-                        break
-                    path_width = self.calc_path_width(route)
-                    if path_width >= 1:
-                        for i in range(len(route.path) - 1):
-                            link = sort_link(route.path[i], route.path[i+1])
-                            num_usable = min(self.num_memory(link)//route.cost, self.num_capacity(link)//route.cost)
-                            # subtract last x elements in pur table, where x = min(path_width, reqs)*num_purifications on the edge (from D_pur), aka the cost of using the route path_width times
-                            self.purification_table[link] = self.purification_table[link][:num_usable*cost+1]
-                    sol_paths.append((route, path_width))
-                    reqs -= path_width
-                    if reqs <= 0:
-                        return sol_paths
+            # Decide path from available resources
+            while len(pq) > 0:
+                route = heapq.heappop(pq) 
+                if route.cost > min_cost + 1:
+                    break
+                path_width = self.calc_path_width(route)
+                if path_width >= 1:
+                    for i in range(len(route.path) - 1):
+                        link = sort_link(route.path[i], route.path[i+1])
+                        num_usable = min(self.num_memory(link)//route.cost, self.num_capacity(link)//route.cost)
+                        if num_usable == 0:
+                            continue
+                        # subtract last x elements in pur table, where x = min(path_width, reqs)*num_purifications on the edge (from D_pur), aka the cost of using the route path_width times
+                        self.purification_table[link] = self.purification_table[link][:num_usable*cost+1]
+                sol_paths.append((route, path_width))
+                reqs -= path_width
+                if reqs <= 0:
+                    return sol_paths
             self.purification_table = update_graph
         return sol_paths
 
@@ -118,12 +118,12 @@ class QPath():
     
     def calc_path_width(self, route):
         # Finds Wmin(i, j) (pg7)
-        min_width = 0
+        max_width = float('inf')
         for i in range(len(route.path) - 1):
             capacity = len(self.purification_table[sort_link(route.path[i], route.path[i+1])])
             cost = route.pur_dec[sort_link(route.path[i], route.path[i+1])] + 1
-            min_width = max(min_width, capacity//cost)
-        return min_width
+            max_width = min(max_width, capacity//cost)
+        return max_width
         
                 
     def shortest_path_BFS(self, source, dst):
@@ -148,8 +148,6 @@ class QPath():
         for i in range(len(path) - 1):
             link = sort_link(path[i], path[i+1])
             if D_pur[link] >= len(self.purification_table[link]):
-                if link not in self.purification_table.keys():
-                    print('FUCKING TRASH ASS LIBRARY WTF IT"S NOT IN THE TABLE')
                 print(link, path, D_pur, self.purification_table)
             fidelity = fidelity * self.purification_table[link][D_pur[link]]
         return fidelity
@@ -157,14 +155,15 @@ class QPath():
 
     def min_fidelity_link(self, path, D_pur):
         # Find the link with the minimum fidelity through the purification table
-        min_fid = 1
-        n1 = n2 = path[0]
+        # Returns -1 if none available
+        max_incr = max_link = 0
         for i in range(len(path) - 1):
             link = sort_link(path[i], path[i+1])
             if D_pur[link] >= len(self.purification_table[link]) - 1: # No more possible purifications on link
                 continue
-            link_fid = self.purification_table[link][D_pur[link]]
-            if link_fid < min_fid:
-                min_fid = link_fid
-                n1, n2 = path[i], path[i+1]
-        return sort_link(n1, n2) # Doesn't actually return link object, just two nodes
+            if self.purification_table[link][D_pur[link]+1] - self.purification_table[link][D_pur[link]] > max_incr:
+                max_link = link
+                max_incr = self.purification_table[link][D_pur[link]+1] - self.purification_table[link][D_pur[link]]
+        if max_incr == 0:
+            return -1
+        return max_link # Doesn't actually return link object, just two nodes

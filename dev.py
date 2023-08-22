@@ -4,14 +4,15 @@ import timeit
 import random
 from collections import Counter
 
-netTopology = Topo.generateString(100, 0.6, 5, 0.1, 6)
+netTopology = Topo.generateString(10, 0.6, 5, 0.1, 6)
 topo = Topo(netTopology)
 algo = QPath(topo, 0.95)
 def run():
-    algo.P2(topo.nodes[random.randint(0, 99)], topo.nodes[random.randint(0,99)], 3)
+    algo.P2(topo.nodes[random.randint(0, 9)], topo.nodes[random.randint(0,9)], 1)
 
-time = timeit.timeit(stmt="run()",setup="from dev import run")
-print(time)
+print(run())
+# time = timeit.timeit(stmt="run()",setup="from dev import run")
+# print(time)
 
 # n = 100
 
