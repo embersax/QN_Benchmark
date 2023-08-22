@@ -529,6 +529,7 @@ class Topo:
             G = nx.Graph()
             G.add_edges_from(edgeAndNodes)
             k_paths = sp.k_shortest_paths(G, source, destination, numberOfPaths, method = 'y')
+            # sp.plot_paths(k_paths, G)
             return k_paths
 
 

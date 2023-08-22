@@ -58,29 +58,37 @@ class QPath():
         self.purification_table = remove_lower_threshold(populate_purification_table({}, self.topo), self.threshold)
         self.name = 'QPath'
     def P2(self, source, dst, reqs):
-        shortest_route_length = self.shortest_path_BFS(source, dst)
-        if shortest_route_length == -1:
-            return
-        update_graph = self.topo
+        try:
+            shortest_hops = self.topo.shortestPathYenAlg(source, dst, 1)[0][1]
+        except:
+            return "No Paths"
+        update_graph = self.purification_table
         sol_paths = []
 
         # for Hmin: E|C|:
-        for min_cost in range(shortest_route_length, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
+        for min_cost in range(shortest_hops, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
             pq = []
             paths = self.topo.shortestPathYenAlg(source, dst, reqs)
             for i in range(len(paths)):
                 path = paths[i][0]
                 cost = paths[i][1]
                 D_pur = defaultdict(lambda: 0)
+                legal = True
                 path_fidelity = self.calc_path_fidelity(path, D_pur)
                 while path_fidelity < self.threshold:
+                    print(cost)
                     link = self.min_fidelity_link(path, D_pur) # Identify link with minimum fidelity to purify
                     if link[0] == link[1]: # No possible purifications
+                        legal = False
                         break
                     D_pur[link] += 1
                     cost += 1
+                    if cost > min_cost + 1:
+                        legal = False
+                        break
                     path_fidelity = self.calc_path_fidelity(path, D_pur) 
-                heapq.heappush(pq, Route(cost, path, D_pur))
+                if legal:
+                    heapq.heappush(pq, Route(cost, path, D_pur))
 
                 while len(pq) > 0:
                     route = heapq.heappop(pq) 
@@ -92,11 +100,12 @@ class QPath():
                             link = sort_link(route.path[i], route.path[i+1])
                             num_usable = min(self.num_memory(link)//route.cost, self.num_capacity(link)//route.cost)
                             # subtract last x elements in pur table, where x = min(path_width, reqs)*num_purifications on the edge (from D_pur), aka the cost of using the route path_width times
-                            self.purification_table[link] = self.purification_table[link][:num_usable*cost]
+                            self.purification_table[link] = self.purification_table[link][:num_usable*cost+1]
                     sol_paths.append((route, path_width))
                     reqs -= path_width
                     if reqs <= 0:
                         return sol_paths
+            self.purification_table = update_graph
         return sol_paths
 
     def num_memory(self, link):
@@ -138,6 +147,10 @@ class QPath():
         fidelity = 1
         for i in range(len(path) - 1):
             link = sort_link(path[i], path[i+1])
+            if D_pur[link] >= len(self.purification_table[link]):
+                if link not in self.purification_table.keys():
+                    print('FUCKING TRASH ASS LIBRARY WTF IT"S NOT IN THE TABLE')
+                print(link, path, D_pur, self.purification_table)
             fidelity = fidelity * self.purification_table[link][D_pur[link]]
         return fidelity
                 
