@@ -20,6 +20,8 @@ class Route():
         self.pur_dec = pur_dec
     def __lt__(self, other):
         return self.cost < other.cost
+    def __repr__(self):
+        return f"\n\nCost: {self.cost}\nPath: {self.path}\nPurification Decisions: {self.pur_dec}"
 
 # Returns the fidelity after a single purification
 def purify(f1, f2):
@@ -59,16 +61,14 @@ class QPath():
         self.name = 'QPath'
     def P2(self, source, dst, reqs):
         
-        shortest_hops = self.topo.shortestPathYenAlg(source, dst, 1)
+        shortest_hops = self.topo.shortestPathYenAlg(source, dst, 1)[0][1]
         update_graph = self.purification_table
         sol_paths = []
-        return
         # for Hmin: E|C|:
         for min_cost in range(shortest_hops, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
             pq = []
-            paths = self.topo.shortestPathYenAlg(source, dst, 3)
-            print(paths)
-            return
+            sol_paths = []
+            paths = self.topo.shortestPathYenAlg(source, dst, reqs)
 
             # Enqueue possible paths
             for i in range(len(paths)):
@@ -77,7 +77,6 @@ class QPath():
                 D_pur = defaultdict(lambda: 0)
                 path_fidelity = self.calc_path_fidelity(path, D_pur)
                 while path_fidelity < self.threshold and len(pq) < reqs:
-                    print(cost)
                     link = self.min_fidelity_link(path, D_pur) # Identify link with minimum fidelity to purify
                     if link == -1 or cost > min_cost + 1: # No possible purifications
                         break
@@ -88,6 +87,7 @@ class QPath():
                     heapq.heappush(pq, Route(cost, path, D_pur))
 
             # Decide path from available resources
+            throughput = 0
             while len(pq) > 0:
                 route = heapq.heappop(pq) 
                 if route.cost > min_cost + 1:
@@ -102,8 +102,8 @@ class QPath():
                         # subtract last x elements in pur table, where x = min(path_width, reqs)*num_purifications on the edge (from D_pur), aka the cost of using the route path_width times
                         self.purification_table[link] = self.purification_table[link][:num_usable*cost+1]
                 sol_paths.append((route, path_width))
-                reqs -= path_width
-                if reqs <= 0:
+                throughput += path_width
+                if throughput >= reqs:
                     return sol_paths
             self.purification_table = update_graph
         return sol_paths
