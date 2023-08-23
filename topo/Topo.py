@@ -517,15 +517,14 @@ class Topo:
     def linksBetween(self, node1, node2):
         return list(filter(lambda link: node2 == link.node1 or node2 == link.node2, [link for link in node1.links]))
 
-    def shortestPathYenAlg(self, source, destination, numberOfPaths):
+    def shortestPathYenAlg(self, source, destination, numberOfPaths, links):
             edgeAndNodes = []
-            for link in self.links:
+            for link in links:
                 # How to determine edges? Using recorded or entangled links? How to double check its correctness?
                 # if link.entangled is True:
                 #     print("Entangled: ", str(link.n1.id), str(link.n2.id))
-                edgeNodes = [link.n1, link.n2]
-                if edgeNodes not in edgeAndNodes:
-                    edgeAndNodes.append(edgeNodes)
+                if link not in edgeAndNodes:
+                    edgeAndNodes.append(link)
             G = nx.Graph()
             G.add_edges_from(edgeAndNodes)
             k_paths = sp.k_shortest_paths(G, source, destination, numberOfPaths, method = 'y')

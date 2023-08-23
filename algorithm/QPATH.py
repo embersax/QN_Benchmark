@@ -61,15 +61,14 @@ class QPath():
         self.name = 'QPath'
     def P2(self, source, dst, reqs):
         
-        shortest_hops = self.topo.shortestPathYenAlg(source, dst, 1)[0][1]
+        shortest_hops = self.topo.shortestPathYenAlg(source, dst, 1, [list(link) for link in self.purification_table.keys()])[0][1]
         update_graph = self.purification_table
         sol_paths = []
         # for Hmin: E|C|:
         for min_cost in range(shortest_hops, len(self.purification_table.keys())*max([len(k) for k in self.purification_table.values()])):
             pq = []
             sol_paths = []
-            paths = self.topo.shortestPathYenAlg(source, dst, reqs)
-
+            paths = self.topo.shortestPathYenAlg(source, dst, reqs, [list(link) for link in self.purification_table.keys()])
             # Enqueue possible paths
             for i in range(len(paths)):
                 path = paths[i][0]
@@ -85,7 +84,6 @@ class QPath():
                     path_fidelity = self.calc_path_fidelity(path, D_pur) 
                 if cost <= min_cost + 1 and path_fidelity >= self.threshold:
                     heapq.heappush(pq, Route(cost, path, D_pur))
-
             # Decide path from available resources
             throughput = 0
             while len(pq) > 0:
@@ -105,6 +103,7 @@ class QPath():
                 throughput += path_width
                 if throughput >= reqs:
                     return sol_paths
+            print('check!')
             self.purification_table = update_graph
         return sol_paths
 
@@ -147,8 +146,8 @@ class QPath():
         fidelity = 1
         for i in range(len(path) - 1):
             link = sort_link(path[i], path[i+1])
-            if D_pur[link] >= len(self.purification_table[link]):
-                print(link, path, D_pur, self.purification_table)
+            if link not in self.purification_table.keys():
+                print(self.topo.links)
             fidelity = fidelity * self.purification_table[link][D_pur[link]]
         return fidelity
                 

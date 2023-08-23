@@ -20,7 +20,7 @@ class Link:
                  entangled=False,
                  swap1=False,
                  swap2=False,
-                 fidelity=0.8):
+                 fidelity=0.6):
         self.swap2 = swap2
         self.swap1 = swap1
         self.l = l
