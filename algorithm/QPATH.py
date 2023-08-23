@@ -103,7 +103,6 @@ class QPath():
                 throughput += path_width
                 if throughput >= reqs:
                     return sol_paths
-            print('check!')
             self.purification_table = update_graph
         return sol_paths
 
@@ -146,8 +145,6 @@ class QPath():
         fidelity = 1
         for i in range(len(path) - 1):
             link = sort_link(path[i], path[i+1])
-            if link not in self.purification_table.keys():
-                print(self.topo.links)
             fidelity = fidelity * self.purification_table[link][D_pur[link]]
         return fidelity
                 

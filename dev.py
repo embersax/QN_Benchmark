@@ -11,7 +11,7 @@ def run():
     n1 = topo.nodes[random.randint(0, 199)]
     n2 = topo.nodes[random.randint(0, 199)]
     print(n1.id, n2.id)
-    return algo.P2(n1, n2, 10)
+    return algo.P2(n1, n2, 1)
 
 
 print(run())
