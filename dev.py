@@ -3,20 +3,24 @@ from algorithm.QPATH import QPath
 import timeit
 import random
 from collections import Counter
+import matplotlib as plt
 
-netTopology = Topo.generateString(100, 0.6, 5, 0.1, 6)
-topo = Topo(netTopology)
-algo = QPath(topo, 0.6)
-def run():
-    n1 = topo.nodes[random.randint(0, 99)]
-    n2 = topo.nodes[random.randint(0, 99)]
-    print(n1.id, n2.id)
+def run(n):
+    n1 = topo.nodes[random.randint(0, n-1)]
+    n2 = topo.nodes[random.randint(0, n-1)]
     return algo.P2(n1, n2, 1)
 
 
-time = timeit.timeit(stmt="run()",setup="from dev import run", number=1)
-print(time)
-
+nodes = [100, 200, 300, 400, 500]
+times = []
+for n in nodes:
+    netTopology = Topo.generateString(n, 0.6, 5, 0.1, 6)
+    topo = Topo(netTopology)
+    algo = QPath(topo, 0.6)
+    # Read timeit docs for why take min
+    times.append(min(timeit.repeat(stmt="run(n)",setup="from dev import run", globals=globals(), number=1)))
+plt.plot(times)
+    
 # n = 100
 
 # netTopology = Topo.generateString(n, 0.6, 5, 0.1, 1)
