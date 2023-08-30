@@ -20,10 +20,11 @@ n_demands = 5  # Total number of demands
 q = 0.5  # BSM success probability
 repeat = 1
 rand_seed = 85
+node_count = 30
 
 Arcs = []   #links
 D = []  # Modified demand set
-length_path = []  # path length constraint
+length_path = []  # path length constraint TODO: delete hardcoded length
 D_acc = []  # Actual demand set
 
 Aff = []  # Variables for the LP objective function
@@ -36,7 +37,7 @@ vars = []  # LP variables
 
 def simpleTest():
     global topo
-    netTopology = Topo.generateString(30, 0.6, 5, 0.1, 6)
+    netTopology = Topo.generateString(node_count, 0.6, 5, 0.1, 6)
 
     alphas = []
     p = [.8, .5]
@@ -222,11 +223,25 @@ print("Status:", LpStatus[prob.status])
 
 # Each of the variables is printed with it's resolved optimum value
 non_zero_var = []
-for v in prob.variables():# TODO: path
+for v in prob.variables():
     if v.varValue > 1e-10:
         print(v.name, "=", v.varValue)
         non_zero_var.append(v)
 
+result_list = [[] for _ in range(node_count)]
+for v in prob.variables():# TODO: convert back to actual nodes
+    if v.varValue > 1e-10:
+        a, b, c = [int(num) for num in v.name.strip("()").split(",")]  # convert string in to num
+        #print(a,b,c)
+        result_list[c].append([G.nodedic[a],G.nodedic[b],v.varValue])
+        #print(G.nodedic[a], G.nodedic[b], c, "=", v.varValue)  # get actual nodes
+        non_zero_var.append(v)
+print(result_list)
+
 # The optimised objective function value is printed to the screen
 # (Modified_Node1, Modified_Node2, # of Modified_Demand) = # of Links
 print("Total Achievable Rate = ", value(prob.objective))
+
+for demand in D_acc:
+    print(str(demand[0]) + "<->" + str(demand[1]), "=", 0, end="  ")
+print("")
