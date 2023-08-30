@@ -161,7 +161,7 @@ for k in range(tot_dem): # for each demand
         temp_vars.append((i, j, k, x))
 
         if (i == D[k][0]):  # if src = Demand's src
-            Aff.append((x, q ** (edge_length[G.nodedic[i] - 1, G.nodedic[j] - 1])))  # TODO: link.node1.loc - link.node1.loc
+            Aff.append((x, q ** (edge_length[G.nodedic[i] - 1, G.nodedic[j] - 1])))
             #Aff.append((x, q ** (length_path[k] - 1)))
             #print(G.nodedic[i], G.nodedic[j])
             #print(edge_length[G.nodedic[i]-1, G.nodedic[j]-1])
@@ -222,7 +222,7 @@ print("Status:", LpStatus[prob.status])
 
 # Each of the variables is printed with it's resolved optimum value
 non_zero_var = []
-for v in prob.variables():
+for v in prob.variables():# TODO: path
     if v.varValue > 1e-10:
         print(v.name, "=", v.varValue)
         non_zero_var.append(v)
