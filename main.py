@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore")
 
 min_len = 1  # minimum path length
 max_len = 10  # maximum path length # TODO: way to calculate min/max len
-n_demands = 5  # Total number of demands
+n_demands = 8  # Total number of demands
 q = 0.5  # BSM success probability
 repeat = 1
 rand_seed = 85
@@ -24,7 +24,7 @@ node_count = 30
 
 Arcs = []   #links
 D = []  # Modified demand set
-length_path = []  # path length constraint TODO: delete hardcoded length
+#length_path = []  # path length constraint,  deleted hardcoded length
 D_acc = []  # Actual demand set
 
 Aff = []  # Variables for the LP objective function
@@ -138,14 +138,14 @@ for x in D_acc:
     for k in range(l):
         D.append(((x[0] - 1) * (max_len + 1) + 1, (x[1] - 1) * (max_len + 1) + k + 2))
         a ,b = x[0], x[1]
-        length_path.append(k+1)
+        #length_path.append(k+1)
 
 # output
 print("Demands: ", D_acc)
 print("Modified Demand: ", D)
 print("Link: ", topo.links)
 print("Link length:", edge_length)
-print("Lengths: ", length_path)
+#print("Lengths: ", length_path)
 tot_dem = len(D)
 
 sum_in = [None] * len(Nodes_mod) * tot_dem
@@ -254,6 +254,7 @@ print("Total Achievable Rate = ", value(prob.objective))
 
 #for i, demand in enumerate(D_acc):
     #print(str(demand[0]) + "<->" + str(demand[1]), "=", my_dict[D_acc[i]], end="  ")
-output = '  '.join(f"{key[0]}<->{key[1]} = {value}" for key, value in my_dict.items())
+print("\n\n\n\n\nFINAL OUTPUT:\n")
+output = '  '.join(f"{key[0]}<->{key[1]} × {value}" for key, value in my_dict.items())
 print(output)
 #print(my_dict)
