@@ -228,7 +228,7 @@ for v in prob.variables():
         print(v.name, "=", v.varValue)
         non_zero_var.append(v)
 
-result_list = [[] for _ in range(node_count)]
+result_list = [[] for _ in range(len(D))]
 for v in prob.variables():# TODO: convert back to actual nodes
     if v.varValue > 1e-10:
         a, b, c = [int(num) for num in v.name.strip("()").split(",")]  # convert string in to num
@@ -236,12 +236,24 @@ for v in prob.variables():# TODO: convert back to actual nodes
         result_list[c].append([G.nodedic[a],G.nodedic[b],v.varValue])
         #print(G.nodedic[a], G.nodedic[b], c, "=", v.varValue)  # get actual nodes
         non_zero_var.append(v)
-print(result_list)
+#print(result_list)
+my_dict = {k: 0 for k in D_acc}  # total path count for each demand
+
+for ren, result in enumerate(result_list):
+    key_tuple = (G.nodedic[D[ren][0]], G.nodedic[D[ren][1]])  # key for dictionary
+    for connection in result:  # add to path count
+        if connection[0] == G.nodedic[D[ren][0]]:
+            my_dict[key_tuple] += connection[2]
+            print(connection[0], G.nodedic[D[ren][0]], my_dict[key_tuple], connection[2])
+    print(ren, result, G.nodedic[D[ren][0]], G.nodedic[D[ren][1]])
+
 
 # The optimised objective function value is printed to the screen
 # (Modified_Node1, Modified_Node2, # of Modified_Demand) = # of Links
 print("Total Achievable Rate = ", value(prob.objective))
 
-for demand in D_acc:
-    print(str(demand[0]) + "<->" + str(demand[1]), "=", 0, end="  ")
-print("")
+#for i, demand in enumerate(D_acc):
+    #print(str(demand[0]) + "<->" + str(demand[1]), "=", my_dict[D_acc[i]], end="  ")
+output = '  '.join(f"{key[0]}<->{key[1]} = {value}" for key, value in my_dict.items())
+print(output)
+#print(my_dict)
