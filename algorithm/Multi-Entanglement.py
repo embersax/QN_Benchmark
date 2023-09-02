@@ -132,7 +132,7 @@ class MultiEntanglement(Algorithm):
         
         # print("Final Result: ")
         # print(str(self.allSDpairInfo))
-        self.maximizeUserPairs()
+        # self.maximizeUserPairs()
 
     # Solving Problem S1 with Cplex (and preparing for Algorithm 2)
     # Maximize source-destination pairs and select main routing path for each pair
@@ -182,7 +182,7 @@ class MultiEntanglement(Algorithm):
                 i += 1
                 # if int(pInfo.selected) == 1:
                 #     print(pInfo)
-        self.integerSolution1()
+        # self.integerSolution1()
 
     # Unimplemented
     def branchAndPrice1(self, curPair, curPath):
