@@ -1,118 +1,220 @@
+"""
+This class is based on the Multi-Entanglement Routing Design over Quantum Networks research paper
+by Yiming Zeng, Jiarui Zhang, Ji Liu, Zhenhua Liu, and Yuanyuan Yang. 
+(Includes OnlineAlgorithm functions for debugging purposes with main.py)
+
+Two dataclasses (SDpairInfo and pathInfo) are created for readability and organization when storing
+source destination pairs, their corresponding paths, and other information.
+
+Note: This paper assumes that the source and destination nodes are not used as switch nodes for other
+pairs. Therefore, the qubit resource constraint ignores source and destination nodes.
+"""
+
+# Packages only OnlineAlgorithm requires
 from collections import defaultdict
 from copy import deepcopy
-
-from algorithm.AlgorithmBase import Algorithm
-from topo.Topo import Topo, Path
 from topo.Node import to
 import numpy as np
 import heapq
 from utils.utils import ReducibleLazyEvaluation
 import abc
-from dataclasses import dataclass
 from functools import reduce
 from itertools import dropwhile
+
+# Packages both OnlineAlgorithm and MultiEntanglement requires
+from algorithm.AlgorithmBase import Algorithm
+from topo.Topo import Topo, Path
+from dataclasses import dataclass
 from algorithm.AlgorithmBase import Algorithm
 
+# Packages only MultiEntanglement requires
 import shortestpaths as sp
+import cplex
 
 @dataclass
-class PossiblePaths:
-    SDpair: tuple
-    shortestPaths: list[tuple] = None
-    marked: bool = False
+class pathInfo:
+    pathNodes: list[int] = None  # A list of numbers representing node id numbers
+    cost: int = None             # The cost or length of the path as specified by pathNodes
+    selected: float = 0.0        # Represents if the path was selected for entanglement (by maximizeUserPairs function)
+
+@dataclass
+class SDpairInfo:
+    SDpair: tuple                # Stores 2 node items
+    paths: list[pathInfo] = None
+    marked: bool = False         # Marked by Algorithm 2 (Integer Solution Recovery) in the research paper at line 5
 
 # Mainly P2 changes (maximize served quantum-user pairs and expected throughput)
 class MultiEntanglement(Algorithm):
     def __init__(self, topo, allowRecoveryPaths=False):
         super().__init__(topo)
-        self.allowRecoveryPaths = allowRecoveryPaths
         self.name="Multi_E"
-        # An element in the list is: [(s_node, d_node), shortestPaths]
-        # Where shortestPathsX is: [([s_node.id, path_node1.id, ..., d_node.id], cost), (...)]
-        self.shortestPathsForPairs = []
-        # This is a list of PickedPaths
-        self.majorPaths = []
-        #  HashMap<PickedPath, LinkedList<PickedPath>>()
-        self.recoveryPaths = {}
+        self.allSDpairInfo = []  # A list of SDpairInfo
+        self.majorPaths = []     # A list of PickedPaths
+
+        # Based on OnlineAlgorithm's fields
+        self.allowRecoveryPaths = allowRecoveryPaths
+        self.recoveryPaths = {}  # HashMap<PickedPath, LinkedList<PickedPath>>()
         self.pathToRecoveryPaths = {}
     
-    # Sort each S-D pair list of paths by cost in ascending order if order is True
-    def sortPathsByCost(self, order=True):
-        for i in range(0, len(self.shortestPathsForPairs)):
-            self.shortestPathsForPairs[i].shortestPaths.sort(key=lambda x: x[1], reverse=order)
+    # Helper functions 
+    # Sort each SD pair list of paths by cost in ascending order if order is False
+    def sortPathsByCost(self, order=False):
+        for i in range(0, len(self.allSDpairInfo)):
+            self.allSDpairInfo[i].paths.sort(key=lambda x: x.cost, reverse=order)
     
-    # Maximize source-destination pairs
-    # Select main routing path for each pair
-    # Mind Switchs' qubits assigned for paths
+    # Converts nodeID to Node object
+    def nodeIDtoNode(self, nodeID):
+        for node in self.topo.nodes:
+            if nodeID == node.id:
+                return node
+
+    # Find all used switch ID numbers from all pathNodes in allSDpairInfo
+    # Returns a list of Node objects
+    def findSwitches(self):
+        s = []
+        for sdInfo in self.allSDpairInfo:
+            for path in sdInfo.paths:
+                s = list(set(path.pathNodes[1:-1]) | set(s))
+
+        # Convert into Node objects
+        switches = []
+        for switchID in s:
+            switches.append(self.nodeIDtoNode(switchID))
+
+        # print(s, "\n")
+        # print(switches, "\n")
+        return(switches)
+
+    # Algorithm 1 Selective Paths Algorithm
+    # Find and sort (in ascending length) shortest distance paths of each SD pair
+    # Stores result in self.allSDpairInfo
     def selectivePaths(self):
         expectedPathNum = len(self.srcDstPairs)
         retrievedPathNum = pow(expectedPathNum, 2)
-        print("expectedPathNum: " + str(expectedPathNum) + " retrievedPathNum: " + str(retrievedPathNum))
+        # print("expectedPathNum: " + str(expectedPathNum) + " retrievedPathNum: " + str(retrievedPathNum))
+        
         for pair in self.srcDstPairs:
             src, dst = pair[0], pair[1]
             shortestPaths = self.topo.shortestPathYenAlg(src.id, dst.id, retrievedPathNum)
-            #self.shortestPathsForPairs.append([pair, shortestPaths])
-            self.shortestPathsForPairs.append(PossiblePaths(pair,shortestPaths))
-        print(str(self.shortestPathsForPairs))
-        print("Sort paths by shortest to longest: ")
+            self.allSDpairInfo.append(SDpairInfo(pair, [pathInfo(pNodes, cost) for pNodes, cost in shortestPaths]))
+        # print("\n" + str(self.allSDpairInfo))
+        # print("\nSort paths by shortest to longest: ")
+        
         # Sort paths by shortest to longest
         self.sortPathsByCost()
-        print(str(self.shortestPathsForPairs))
+        # print(str(self.allSDpairInfo))
         
-        # For each S-D pair, check if it has the correct number of paths
-        for pair in self.shortestPathsForPairs:
-            pathNum = len(pair.shortestPaths)
-            if pathNum < expectedPathNum:
-                # Add paths until S-D pair has M paths
-                # Note: for smaller topologies, there wouldn't be other unique paths to add
-                print("Need to add paths")
-            elif pathNum > expectedPathNum:
-                print("Need to delete " + str(pathNum - expectedPathNum) + " paths")
+        # Remove longest distance paths of all paths list until length of all paths list = (number of SD pairs)^2
+        while sum(len(pairInfo.paths) for pairInfo in self.allSDpairInfo) > retrievedPathNum:
+            # print("Total amount of paths: " + str(sum(len(pairInfo.paths) for pairInfo in self.allSDpairInfo)))
+            deleteInfo = None
+            # Find longest path to be deleted
+            for pairInfo in self.allSDpairInfo:
+                if len(pairInfo.paths) > expectedPathNum:
+                    if (deleteInfo == None) or (pairInfo.paths[-1].cost > deleteInfo.paths[-1].cost):
+                        deleteInfo = pairInfo
+            # print("Deleted: ", str(deleteInfo.paths[-1]))
+            deleteInfo.paths.pop(-1)
+            
+        # For each SD pair, check if it has the correct number of paths
+        for pairInfo in self.allSDpairInfo:
+            pathNum = len(pairInfo.paths)
+            
+            # Add paths until SD pair has M paths (unimplemented)
+            # Note: for smaller topologies, there wouldn't be other unique paths to add
+            # if pathNum < expectedPathNum:
+                # print("Need to add paths")
+            if pathNum > expectedPathNum:
+                # print("Need to delete " + str(pathNum - expectedPathNum) + " paths")
                 # Delete largest cost paths until M paths
                 for extraPath in range(0, pathNum - expectedPathNum):
-                    pair.shortestPaths.pop(-1)
-        print("Final Result: ")
-        print(str(self.shortestPathsForPairs))
-    # def branchAndPrice1(self):
-        # Given current path, the selected path and ?
-        # for paths in shortestPaths:
-        #     if
-        # new trimmed list of selectivePaths() = empty
-        # for pair, paths in self.shortestPathsForPairs:
-        #     if paths without trim anded with self.shortestPathsForPairs and self.shortestPathsForPairs is possible:
-        #         add path to new trimmed path
-        # if the length of new trimmed list <=1
-        #     mark S-D pair
-        #     if the length of new trimmed list ==1:
-        #         ? = 1
-        #     Compare ? and solution, update solution if needed
-        #     find
+                    pairInfo.paths.pop(-1)
+        
+        # print("Final Result: ")
+        # print(str(self.allSDpairInfo))
+        self.maximizeUserPairs()
+
+    # Solving Problem S1 with Cplex (and preparing for Algorithm 2)
+    # Maximize source-destination pairs and select main routing path for each pair
+    # Adds in constraints for limited qubit resource and variable representing if route is selected
+    def maximizeUserPairs(self):
+        switchesList = self.findSwitches()
+        
+        # Create optimization model and set problem statement to be maximized
+        opt_mod = cplex.Cplex()
+        opt_mod.objective.set_sense(opt_mod.objective.sense.maximize)
+        
+        # For each path, add decision variables, selectedState (which is a value from 0 to 1), to the problem statement with a coefficient of 1
+        # For each SD pair, create an expression for the constraint to make the sum of all selectedState for the pair's paths <= 1
+            # Notes: ind is the decision variable while val is the coefficient the corresponding decision variable is multiplied with
+            # The constraint expression = (ind0*val0) + (ind1*val1) + ...
+        for pairNum, pairInfo in enumerate(self.allSDpairInfo):
+            expr1 = cplex.SparsePair(ind=[], val=[])
+            for pathNum, pInfo in enumerate(pairInfo.paths):
+                opt_mod.variables.add(obj=[1.0], lb=[0], ub=[1], names=["selectedState" + str(pairNum) + "." + str(pathNum)])
+                expr1.ind.append("selectedState" + str(pairNum) + "." + str(pathNum))
+                expr1.val.append(1.0)
+            opt_mod.linear_constraints.add(lin_expr=[expr1], senses=["L"], rhs=[1])
+
+        # Add constraint: For any switch (meaning nodes between SD and not SD nodes themselves), their total qubits must be enough to support all selected paths using the switch
+            # Note: This program assumes that SD pairs do not act as switches for others (all switches are honest)
+        # Iterating through each switch, find the number of times it is used in each selected path (the minimum amount of qubits for the switch is 2 times of that amount)
+        for node in switchesList:
+            # print("Node: " + str(node.id) + " RemainingQubits: " + str(node.remainingQubits))
+            capacity = int(node.remainingQubits/2)
+            expr2 = cplex.SparsePair(ind=[], val=[])
+            for pairNum, pairInfo in enumerate(self.allSDpairInfo):
+                for pathNum, pInfo in enumerate(pairInfo.paths):
+                    expr2.ind.append("selectedState" + str(pairNum) + "." + str(pathNum))
+                    expr2.val.append(len(set(pInfo.pathNodes[1:-1]) & set([node.id])))
+            opt_mod.linear_constraints.add(lin_expr=[expr2], senses=["L"], rhs=[capacity])
+
+        opt_mod.solve()
+        # print("Number of SD pairs serviced  = ", opt_mod.solution.get_objective_value())
+
+        # Transfer solution over to allSDpairInfo structures
+        numcols = opt_mod.variables.get_num()
+        sol = opt_mod.solution.get_values()
+        i = 0
+        for pairInfo in self.allSDpairInfo:
+            for pInfo in pairInfo.paths:
+                pInfo.selected = sol[i]
+                i += 1
+                # if int(pInfo.selected) == 1:
+                #     print(pInfo)
+        self.integerSolution1()
+
+    # Unimplemented
+    def branchAndPrice1(self, curPair, curPath):
+        # print(curPair, curPath, curPath.selected)
+        return
     
-    # Given a list of paths for S-D pairs with selectivePaths(),
-    # select one main shortest distance path for each S-D pair
-    # def integerSolution1(self):
-        # Set selected main path of S-D pair as 0
-        # Set path signal of all paths for each S-D pair as 0
+    # Given a list of paths for SD pairs with selectivePaths() and maximizeUserPairs(),
+    # select one main shortest distance path for each SD pair
+    def integerSolution1(self):
         # Sort the list of paths from selectivePaths() in descending order
-        # self.sortPathsByCost(False)
-        # Select S-D pair with highest path cost
-        # max(self.shortestPathsForPairs, key=lambda x: x.shortestPaths[0][1]).marked = True
-        #for item in self.shortestPathsForPairs:
-        #     if ? (might be path from selectivePaths) == 1:
-        #         mark S-D pair by setting path signal as 1?
+        self.sortPathsByCost(True)
         
-        # Find max path from selectivePaths() <1 and satisfies s-d not entangled
-        #self.branchAndPrice1()
-        
+        # Mark SD pairs with clear selected route (when selected == 1)
+        for pairInfo in self.allSDpairInfo:
+            for path in pairInfo.paths:
+                if int(path.selected) == 1:
+                    pairInfo.marked = True
+        # print(self.allSDpairInfo)
+        # Find maximum selected value that is < 1 and its SD pair is not entangled
+        curPair, curPath, maxSelected = None, None, None
+        for pairInfo in self.allSDpairInfo:
+            if pairInfo.marked is False:
+                for path in pairInfo.paths:
+                    if ((maxSelected == None) or (path.selected > maxSelected)) and (path.selected < 1):
+                        maxSelected = path.selected
+                        curPair = pairInfo
+                        curPath = path
+
+        if maxSelected is not None:
+            self.branchAndPrice1(curPair, curPath)
     
-    # def branchAndPrice2(self):
-    
-    # Maximize expected throughput of all source-destination pairs from Step1
-    # Determine qubits assigned to paths from Step1
-    # Mind Switchs' qubits assigned for paths
-    # def integerSolution2(self):
-    
-    # Currently using OnlineAlgorithm's functions to run topology
+    # OnlineAlgorithm's functions below
     def prepare(self):
         pass
 
