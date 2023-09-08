@@ -1,45 +1,24 @@
 from topo.Topo import Topo
-from algorithm.QPATH import QPath
-import timeit
-import random
+from algorithm.QLEAP import QLeap
 from collections import Counter
 import matplotlib.pyplot as plt
 
-def run(n):
-    n1 = topo.nodes[random.randint(0, n-1)]
-    n2 = topo.nodes[random.randint(0, n-1)]
-    return algo.P2(n1, n2, 1)
-
-
-nodes = [100, 200]
-times = []
-for n in nodes:
-    netTopology = Topo.generateString(n, 0.6, 5, 0.1, 6)
-    topo = Topo(netTopology)
-    algo = QPath(topo, 0.6)
-    # Read timeit docs for why take min
-    times.append(min(timeit.repeat(stmt="run(n)",setup="from dev import run", globals=globals(), number=3)))
-plt.bar(nodes, [time*1000 for time in times])
-_, ax = plt.subplots()
-ax.set_xlabel = 'ms'
-
-plt.show()
-# n = 100
-
-# netTopology = Topo.generateString(n, 0.6, 5, 0.1, 1)
+# netTopology = Topo.generateString(5, 0.6, 5, 0.1, 6)
 # topo = Topo(netTopology)
+# algo = QLeap(topo, 0.6)
 
+# print(algo.P2(topo.nodes[1], topo.nodes[0], 1))
 
-# algo = QPath(topo, 0.95)
-# sols = algo.P2(topo.nodes[random.randint(0, n-1)], topo.nodes[random.randint(0,n-1)], 3)
-# print(sols)
-
-# for sol in sols:
-#     print(f"Cost: {sol[0].cost}")
-#     print(f"Path: {sol[0].path}")
-#     print(f"Purification Decisions: {sol[0].pur_dec}")
-#     print(f"Times Takeable: {sol[1]}")
-# assert d[topo.nodes[0], topo.nodes[3]] >= sol[1]*sol[0].cost # Cap > cost
-
-# print(algo.P2(topo.nodes[0], topo.nodes[3], 1))
-
+class Test():
+    def __init__(self, n1, n2):
+        self.n1 = min(n1, n2)
+        self.n2 = max(n1, n2)
+    def __eq__(self, other):
+        if self.n1 == other.n1 and self.n2 == other.n2:
+            return True
+        return False
+    def __hash__(self):
+        return hash((self.n1, self.n2))
+l = [Test(1, 2), Test(1, 2)]
+s = set(l)
+print(s)
