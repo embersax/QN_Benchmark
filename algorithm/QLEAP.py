@@ -78,12 +78,11 @@ class QLeap():
             return
         path = find_path(parents, dst)
         average_fid = self.threshold**(1/len(path))
-
-        path2 = self.topo.shortestPathYenAlg(src, dst, 1, [list(link) for link in self.purification_table.keys()])
-        print(path2[0][0])
-        print(path)
-        assert len(path2[0][0]) == len(path)
-        return average_fid
+        D_pur = defaultdict(lambda: 0)
+        # for i in range(len(path) - 1): #Iterate over number of links
+        #     link_fid = self.purification_table[path[i], path[i+1]]
+        #     if link_fid < average_fid:
+                
 
     def extended_dijkstra(self, src): 
         fid = {node: 0 for node in self.topo.nodes}
