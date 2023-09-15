@@ -9,6 +9,7 @@ import heapq
 #                       (node1, node2) : [fidelity at 0 purifications..., fidelity at max purifications]
 #                       ...
 #                       }
+# All links are ordered to lookup in pure table and pure decisions 
 
 # Path tracing credits to https://stackoverflow.com/questions/8922060/how-to-trace-the-path-in-a-breadth-first-search
 
@@ -24,7 +25,7 @@ def sort_link(n1, n2):
     return (n1, n2)
 
 
-# Returns the path given a 
+# Returns the path given a list of parent nodes
 def find_path(d, dst):
     path = [dst]
     back = d[dst]
@@ -79,10 +80,48 @@ class QLeap():
         path = find_path(parents, dst)
         average_fid = self.threshold**(1/len(path))
         D_pur = defaultdict(lambda: 0)
-        # for i in range(len(path) - 1): #Iterate over number of links
-        #     link_fid = self.purification_table[path[i], path[i+1]]
-        #     if link_fid < average_fid:
-                
+        for i in range(len(path) - 1): #Iterate over number of links
+            link = sort_link(path[i], path[i+1])
+            D_pur[link] = self.min_pur(link, average_fid)
+        
+        route = Route(len(path) + sum(D_pur.values()) - 1, path, D_pur)
+        path_width = self.calc_path_width(route)
+        if path_width >= 1:
+            for i in range(len(route.path) - 1):
+                link = sort_link(route.path[i], route.path[i+1])
+                num_usable = min(self.num_memory(link)//route.cost, self.num_capacity(link)//route.cost)
+                path_width = min(path_width, num_usable)
+        sol_paths.append((route, path_width))
+        self.purification_table = update_graph
+        return (route, path_width)
+
+    def num_memory(self, link):
+        # T/F if link nodes have nQubits
+        return min(link[0].nQubits, link[1].nQubits)
+
+    def num_capacity(self, link):
+        # fact or cap: A link can support cap capacity
+        return len(self.purification_table[link])
+
+    # binary search to find the min number of purifications on a link to reach threshold fidelity
+    def min_pur(self, link, f):
+        left, right = 0, len(self.purification_table[link])
+        while left < right:
+            mid = left + (right - left)//2
+            if self.purification_table[link][mid] < f:
+                right = mid
+            else:
+                left = mid + 1
+        return left + 1
+    
+    def calc_path_width(self, route):
+        # Finds Wmin(i, j) (pg7)
+        max_width = float('inf')
+        for i in range(len(route.path) - 1):
+            capacity = len(self.purification_table[sort_link(route.path[i], route.path[i+1])])
+            cost = route.pur_dec[sort_link(route.path[i], route.path[i+1])] + 1
+            max_width = min(max_width, capacity//cost)
+        return max_width
 
     def extended_dijkstra(self, src): 
         fid = {node: 0 for node in self.topo.nodes}

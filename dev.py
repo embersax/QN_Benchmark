@@ -11,4 +11,4 @@ topo = Topo(netTopology)
 algo = QLeap(topo, 0.6)
 
 a = algo.P2(topo.nodes[random.randint(0, n-1)], topo.nodes[random.randint(0, n-1)], 1)
-print(type(a[0]))
+print(a)

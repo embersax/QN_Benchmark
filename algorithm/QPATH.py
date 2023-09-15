@@ -13,6 +13,7 @@ import heapq
 # Path tracing credits to https://stackoverflow.com/questions/8922060/how-to-trace-the-path-in-a-breadth-first-search
 
 
+# Contains information about a path
 class Route():
     def __init__(self, cost, path, pur_dec):
         self.cost = cost
@@ -75,6 +76,8 @@ class QPath():
                 cost = paths[i][1]
                 D_pur = defaultdict(lambda: 0)
                 path_fidelity = self.calc_path_fidelity(path, D_pur)
+
+                # While path fid < threshold
                 while path_fidelity < self.threshold and len(pq) < reqs:
                     link = self.min_fidelity_link(path, D_pur) # Identify link with minimum fidelity to purify
                     if link == -1 or cost > min_cost + 1: # No possible purifications
