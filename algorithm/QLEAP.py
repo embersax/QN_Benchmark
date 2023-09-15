@@ -78,7 +78,7 @@ class QLeap():
         if fid[dst] == 0: # No path
             return
         path = find_path(parents, dst)
-        average_fid = self.threshold**(1/len(path))
+        average_fid = self.threshold**(1/(len(path)-1))
         D_pur = defaultdict(lambda: 0)
         for i in range(len(path) - 1): #Iterate over number of links
             link = sort_link(path[i], path[i+1])
@@ -105,14 +105,14 @@ class QLeap():
 
     # binary search to find the min number of purifications on a link to reach threshold fidelity
     def min_pur(self, link, f):
-        left, right = 0, len(self.purification_table[link])
+        left, right = 0, len(self.purification_table[link]) - 1
         while left < right:
             mid = left + (right - left)//2
-            if self.purification_table[link][mid] < f:
+            if self.purification_table[link][mid] > f:
                 right = mid
             else:
                 left = mid + 1
-        return left + 1
+        return left 
     
     def calc_path_width(self, route):
         # Finds Wmin(i, j) (pg7)
