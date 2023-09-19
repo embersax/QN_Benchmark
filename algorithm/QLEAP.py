@@ -3,6 +3,7 @@ from topo.Topo import Topo
 from algorithm.AlgorithmBase import Algorithm
 from utils.CollectionUtils import MinHeap
 from collections import Counter, defaultdict
+import sys
 import heapq
 
 # Purification table = {
@@ -19,11 +20,11 @@ import heapq
 def purify(f1, f2):
     return f1*f2/(f1*f2 + (1-f1)*(1-f2))
 
+# Doesn't actually deal with links, just orders a tuple of nodes
 def sort_link(n1, n2):
     if n1.id > n2.id:
         return (n2, n1)
     return (n1, n2)
-
 
 # Returns the path given a list of parent nodes
 def find_path(d, dst):
@@ -74,26 +75,54 @@ class QLeap():
     def P2(self, src, dst, reqs):
         update_graph = self.purification_table
         sol_paths = []
-        fid, parents = self.extended_dijkstra(src)
-        if fid[dst] == 0: # No path
-            return
-        path = find_path(parents, dst)
-        average_fid = self.threshold**(1/(len(path)-1))
-        D_pur = defaultdict(lambda: 0)
-        for i in range(len(path) - 1): #Iterate over number of links
-            link = sort_link(path[i], path[i+1])
-            D_pur[link] = self.min_pur(link, average_fid)
-        
-        route = Route(len(path) + sum(D_pur.values()) - 1, path, D_pur)
-        path_width = self.calc_path_width(route)
-        if path_width >= 1:
-            for i in range(len(route.path) - 1):
-                link = sort_link(route.path[i], route.path[i+1])
-                num_usable = min(self.num_memory(link)//route.cost, self.num_capacity(link)//route.cost)
-                path_width = min(path_width, num_usable)
-        sol_paths.append((route, path_width))
-        self.purification_table = update_graph
-        return (route, path_width)
+        throughput = 0
+
+        for r in range(reqs):
+
+            # Pathfinding
+            fid, parents = self.extended_dijkstra(src)
+            if fid[dst] == 0: # No path
+                return sol_paths
+            path = find_path(parents, dst)
+            if len(path) == 1: # src == dst
+                return [src]
+
+            # Purification decisions
+            average_fid = self.threshold**(1/(len(path)-1))
+            D_pur = defaultdict(lambda: 0)
+            for i in range(len(path) - 1):
+                link = sort_link(path[i], path[i+1])
+                D_pur[link] = self.min_pur(link, average_fid)
+            
+            # Resource alloc
+            route = Route(len(path) + sum(D_pur.values()) - 1, path, D_pur)
+            path_width = self.calc_path_width(route)
+            if path_width >= 1:
+                sol_paths.append(route)
+                for i in range(len(route.path) - 1):
+                    link = sort_link(route.path[i], route.path[i+1])
+                    num_usable = min(self.num_memory(link)//route.cost, self.num_capacity(link)//route.cost)
+                    path_width = min(path_width, num_usable)
+
+                # Mark links as used
+                for i in range(len(route.path) - 1):
+                    link = sort_link(route.path[i], route.path[i+1])
+                    to_mark = path_width
+                    while to_mark > 0:
+                        for l in self.topo.links:
+                            if l.n1.id == link[0].id and l.n2.id == link[1].id:
+                                l.utilized = True
+                                to_mark -= 1
+
+            throughput += path_width
+            if throughput >= reqs:
+                return sol_paths
+
+
+
+            sol_paths.append((route, path_width))
+            self.purification_table = update_graph
+            return (route, path_width)
 
     def num_memory(self, link):
         # T/F if link nodes have nQubits
@@ -112,6 +141,9 @@ class QLeap():
                 right = mid
             else:
                 left = mid + 1
+        if self.purification_table[link][left] < f:
+            print("Rip, time to add more complexity!")
+            sys.exit(1)
         return left 
     
     def calc_path_width(self, route):
@@ -137,10 +169,11 @@ class QLeap():
                 continue
             
             for link in curr_node.links:
-                fidelity = curr_fid*link.fidelity
-                neighbor = link.n2 if link.n1.id == curr_id else link.n1
-                if fidelity > fid[neighbor]:
-                    fid[neighbor] = fidelity
-                    heap.push(fidelity, neighbor.id, neighbor)
-                    parents[neighbor] = curr_node
+                if not link.utilized:
+                    fidelity = curr_fid*link.fidelity
+                    neighbor = link.n2 if link.n1.id == curr_id else link.n1
+                    if fidelity > fid[neighbor]:
+                        fid[neighbor] = fidelity
+                        heap.push(fidelity, neighbor.id, neighbor)
+                        parents[neighbor] = curr_node
         return (fid, parents)
