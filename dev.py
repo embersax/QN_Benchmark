@@ -13,7 +13,7 @@ def run(n):
     return algo.P2(n1, n2, 1)
 
 
-nodes = [20]
+nodes = [200]
 times = []
 for n in nodes:
     netTopology = Topo.generateString(n, 0.6, 5, 0.1, 6)

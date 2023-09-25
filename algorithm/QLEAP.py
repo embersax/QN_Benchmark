@@ -114,15 +114,15 @@ class QLeap():
                                 l.utilized = True
                                 to_mark -= 1
 
+           
+            self.purification_table = update_graph            
             throughput += path_width
+            sol_paths.append((route, path_width))
+
             if throughput >= reqs:
                 return sol_paths
 
-
-
-            sol_paths.append((route, path_width))
-            self.purification_table = update_graph
-            return (route, path_width)
+        return sol_paths
 
     def num_memory(self, link):
         # T/F if link nodes have nQubits
@@ -133,18 +133,24 @@ class QLeap():
         return len(self.purification_table[link])
 
     # binary search to find the min number of purifications on a link to reach threshold fidelity
+    # def min_pur(self, link, f):
+    #     left, right = 0, len(self.purification_table[link]) - 1
+    #     while left < right:
+    #         mid = left + (right - left)//2
+    #         if self.purification_table[link][mid] > f:
+    #             right = mid
+    #         else:
+    #             left = mid + 1
+    #     if self.purification_table[link][left] < f:
+    #         print("Rip, time to add more complexity!")
+    #         sys.exit(1)
+    #     return left 
     def min_pur(self, link, f):
-        left, right = 0, len(self.purification_table[link]) - 1
-        while left < right:
-            mid = left + (right - left)//2
-            if self.purification_table[link][mid] > f:
-                right = mid
-            else:
-                left = mid + 1
-        if self.purification_table[link][left] < f:
-            print("Rip, time to add more complexity!")
-            sys.exit(1)
-        return left 
+        for i in range(len(self.purification_table[link])):
+            if self.purification_table[link][i] >= self.threshold:
+                return i
+        print('FUCK')
+        sys.exit(1)
     
     def calc_path_width(self, route):
         # Finds Wmin(i, j) (pg7)
@@ -157,6 +163,7 @@ class QLeap():
 
     def extended_dijkstra(self, src): 
         fid = {node: 0 for node in self.topo.nodes}
+        max_fid = {node: 1 for node in self.topo.nodes}
         parents = {node: None for node in self.topo.nodes}
         fid[src] = 1
         heap = MinHeap()
@@ -172,7 +179,8 @@ class QLeap():
                 if not link.utilized:
                     fidelity = curr_fid*link.fidelity
                     neighbor = link.n2 if link.n1.id == curr_id else link.n1
-                    if fidelity > fid[neighbor]:
+                    max_fid[neighbor] = max_fid[neighbor] * self.purification_table[sort_link(curr_node, neighbor)][-1]
+                    if fidelity > fid[neighbor] and max_fid[neighbor] >= self.threshold:
                         fid[neighbor] = fidelity
                         heap.push(fidelity, neighbor.id, neighbor)
                         parents[neighbor] = curr_node
