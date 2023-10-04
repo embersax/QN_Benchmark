@@ -13,7 +13,7 @@ def run(n):
     return algo.P2(n1, n2, 1)
 
 
-nodes = [200]
+nodes = [100, 200, 300, 400, 500]
 times = []
 for n in nodes:
     netTopology = Topo.generateString(n, 0.6, 5, 0.1, 6)
@@ -21,6 +21,8 @@ for n in nodes:
     algo = QLeap(topo, 0.6)
     # Read timeit docs for why take min
     times.append(min(timeit.repeat(stmt="run(n)",setup="from dev import run", globals=globals(), number=1)))
-print(times)
-plt.plot(times)
+
+plt.bar(nodes, [i * 1000 for i in times])
+plt.xlabel('Number of Nodes')
+plt.ylabel('Time in ms')
 plt.show()

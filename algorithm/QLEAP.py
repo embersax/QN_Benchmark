@@ -132,24 +132,12 @@ class QLeap():
         # fact or cap: A link can support cap capacity
         return len(self.purification_table[link])
 
-    # binary search to find the min number of purifications on a link to reach threshold fidelity
-    # def min_pur(self, link, f):
-    #     left, right = 0, len(self.purification_table[link]) - 1
-    #     while left < right:
-    #         mid = left + (right - left)//2
-    #         if self.purification_table[link][mid] > f:
-    #             right = mid
-    #         else:
-    #             left = mid + 1
-    #     if self.purification_table[link][left] < f:
-    #         print("Rip, time to add more complexity!")
-    #         sys.exit(1)
-    #     return left 
+    # returns the min number of purifications on a link to reach threshold fidelity
     def min_pur(self, link, f):
         for i in range(len(self.purification_table[link])):
             if self.purification_table[link][i] >= self.threshold:
                 return i
-        print('FUCK')
+        print('Something WONGGGGGG(ook yi)')
         sys.exit(1)
     
     def calc_path_width(self, route):
