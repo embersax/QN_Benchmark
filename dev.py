@@ -13,7 +13,7 @@ def run(n):
     return algo.P2(n1, n2, 1)
 
 
-nodes = [100]
+nodes = [100, 200, 300, 400, 500]
 times = []
 for n in nodes:
     netTopology = Topo.generateString(n, 0.6, 5, 0.1, 6)
@@ -22,5 +22,7 @@ for n in nodes:
     # Read timeit docs for why take min
     times.append(min(timeit.repeat(stmt="run(n)",setup="from dev import run", globals=globals(), number=1)))
 
-plt.bar([1,2,3], [4,5,5])
+plt.bar(nodes, [i * 1000 for i in times])
+plt.xlabel('Number of Nodes')
+plt.ylabel('Time in ms')
 plt.show()
